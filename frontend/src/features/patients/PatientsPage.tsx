@@ -1,52 +1,46 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
-import { useData, type PatientCreateInput } from '../../hooks/useData'
+import { useState, useMemo, type ReactNode } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useData } from '../../hooks/useData'
 import { formatGlucose, formatRange } from '../dashboard/helpers'
-
-const emptyForm: PatientCreateInput = {
-  national_id: '',
-  full_name: '',
-  phone_number: '',
-  baseline_systolic: 0,
-  baseline_diastolic: 0,
-  baseline_glucose: null,
-}
+import PatientRegistrationForm from './components/PatientRegistrationForm'
+import { parseEgyptianNationalId } from './utils/nationalId'
+import type { Patient } from '../../api/patients'
 
 export default function PatientsPage(): ReactNode {
-  const { overview, loading, error, addPatient, addPrescription } = useData()
+  const { overview, loading, error, addPatient } = useData()
+  const navigate = useNavigate()
 
-  const [form, setForm] = useState<PatientCreateInput>(emptyForm)
-  const [message, setMessage] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [showModal, setShowModal] = useState(false)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
 
-  const [rxPatientId, setRxPatientId] = useState<string>('')
-  const [rxMed, setRxMed] = useState('')
-  const [rxDosage, setRxDosage] = useState('')
+  const patients = useMemo(() => overview?.patients ?? [], [overview?.patients])
 
-  const set = <K extends keyof PatientCreateInput>(
-    key: K,
-    value: PatientCreateInput[K]
-  ) => setForm((prev) => ({ ...prev, [key]: value }))
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    const ok = addPatient(form)
-    setMessage(
-      ok
-        ? `تم تسجيل ${form.full_name} بنجاح.`
-        : 'الرقم القومي مستخدم بالفعل لمريض تاني.'
+  const filteredPatients = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return patients
+    return patients.filter(
+      (p) =>
+        p.full_name.toLowerCase().includes(q) ||
+        p.national_id.includes(q) ||
+        p.phone_number.includes(q)
     )
-    if (ok) setForm(emptyForm)
-  }
+  }, [patients, search])
 
-  const handleRxSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    if (!rxPatientId || !rxMed || !rxDosage) return
-    addPrescription(rxPatientId, {
-      medication_name: rxMed,
-      dosage: rxDosage,
+  const handleRegistrationSuccess = (newPatient: Patient) => {
+    // Also sync with shared mock overview data for seamless client navigation
+    addPatient({
+      national_id: newPatient.national_id,
+      full_name: newPatient.full_name,
+      phone_number: newPatient.phone_number,
+      baseline_systolic: newPatient.baseline_systolic,
+      baseline_diastolic: newPatient.baseline_diastolic,
+      baseline_glucose: newPatient.baseline_glucose,
     })
-    setRxMed('')
-    setRxDosage('')
-    setMessage('تمت إضافة الروشتة بنجاح.')
+
+    setShowModal(false)
+    setToastMessage(`Patient ${newPatient.full_name} registered successfully.`)
+    navigate(`/patients/${newPatient.id}`)
   }
 
   if (loading) {
@@ -57,241 +51,208 @@ export default function PatientsPage(): ReactNode {
     return <div className="rounded-xl bg-red-50 p-6 text-sm text-red-700">{error}</div>
   }
 
-  const patients = overview?.patients ?? []
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">Patients</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Register chronic patients and their active prescriptions.
-        </p>
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Chronic Patient Registry</h1>
+          <p className="mt-1 text-xs sm:text-sm text-slate-500">
+            Clinical identity records, baseline vitals, and prescription monitoring.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <Link
+            to="/patients/new"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Register Patient
+          </Link>
+          <button
+            type="button"
+            onClick={() => setShowModal(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition"
+          >
+            Quick Modal
+          </button>
+        </div>
       </div>
 
-      {message && (
-        <div className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          {message}
+      {toastMessage && (
+        <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800 flex items-center justify-between">
+          <span>{toastMessage}</span>
+          <button
+            onClick={() => setToastMessage(null)}
+            className="text-emerald-600 hover:text-emerald-800 font-bold"
+          >
+            ✕
+          </button>
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-4 rounded-xl bg-white p-6 shadow-sm"
-        >
-          <h2 className="text-sm font-semibold text-slate-900">Register patient</h2>
-          <div>
-            <label className="mb-1 block text-xs text-slate-500">Full name</label>
-            <input
-              value={form.full_name}
-              onChange={(e) => set('full_name', e.target.value)}
-              required
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs text-slate-500">
-              National ID (14 digits)
-            </label>
-            <input
-              value={form.national_id}
-              onChange={(e) => set('national_id', e.target.value)}
-              required
-              minLength={14}
-              maxLength={14}
-              pattern="\d{14}"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 font-mono text-sm outline-none focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs text-slate-500">Phone</label>
-            <input
-              value={form.phone_number}
-              onChange={(e) => set('phone_number', e.target.value)}
-              required
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="mb-1 block text-xs text-slate-500">
-                Baseline systolic
-              </label>
-              <input
-                type="number"
-                value={form.baseline_systolic || ''}
-                onChange={(e) =>
-                  set('baseline_systolic', Number(e.target.value))
-                }
-                required
-                min={50}
-                max={300}
-                placeholder="120"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-slate-500">
-                Baseline diastolic
-              </label>
-              <input
-                type="number"
-                value={form.baseline_diastolic || ''}
-                onChange={(e) =>
-                  set('baseline_diastolic', Number(e.target.value))
-                }
-                required
-                min={30}
-                max={200}
-                placeholder="80"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-slate-500">
-                Baseline glucose
-              </label>
-              <input
-                type="number"
-                value={form.baseline_glucose ?? ''}
-                onChange={(e) =>
-                  set(
-                    'baseline_glucose',
-                    e.target.value === '' ? null : Number(e.target.value)
-                  )
-                }
-                min={1}
-                placeholder="100"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-              />
-            </div>
-          </div>
-          <button
-            type="submit"
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+      {/* Search & Filter Bar */}
+      <div className="flex items-center justify-between gap-4 rounded-xl bg-white p-4 shadow-sm border border-slate-200">
+        <div className="relative flex-1 max-w-md">
+          <input
+            type="text"
+            placeholder="Search by name, National ID, or phone…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-lg border border-slate-200 pl-9 pr-4 py-2 text-xs sm:text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          />
+          <svg
+            className="absolute left-3 top-2.5 h-4 w-4 text-slate-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
-            Register patient
-          </button>
-        </form>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
 
-        <form
-          onSubmit={handleRxSubmit}
-          className="space-y-4 rounded-xl bg-white p-6 shadow-sm"
-        >
-          <h2 className="text-sm font-semibold text-slate-900">
-            Add prescription
-          </h2>
-          {patients.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              Register a patient first to add a prescription.
-            </p>
-          ) : (
-            <>
-              <div>
-                <label className="mb-1 block text-xs text-slate-500">
-                  Patient
-                </label>
-                <select
-                  value={rxPatientId}
-                  onChange={(e) => setRxPatientId(e.target.value)}
-                  required
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-                >
-                  <option value="">Select patient…</option>
-                  {patients.map((p) => (
-                    <option key={p.patient_id} value={p.patient_id}>
-                      {p.full_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-slate-500">
-                  Medication name
-                </label>
-                <input
-                  value={rxMed}
-                  onChange={(e) => setRxMed(e.target.value)}
-                  required
-                  placeholder="Metformin 500mg"
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-slate-500">
-                  Dosage
-                </label>
-                <input
-                  value={rxDosage}
-                  onChange={(e) => setRxDosage(e.target.value)}
-                  required
-                  placeholder="قرص مرتين يوميا"
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-              >
-                Add prescription
-              </button>
-            </>
-          )}
-        </form>
+        <span className="text-xs text-slate-500 font-medium">
+          Showing {filteredPatients.length} of {patients.length} patients
+        </span>
       </div>
 
-      <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+      {/* Patient Directory Table */}
+      <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-slate-200">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead className="bg-slate-50 text-left">
               <tr>
-                {[
-                  'Patient',
-                  'National ID',
-                  'Baseline BP',
-                  'Baseline Glucose',
-                  'Active Rx',
-                  'Cycles',
-                ].map((header) => (
-                  <th
-                    key={header}
-                    scope="col"
-                    className="px-4 py-3 font-medium text-slate-500"
-                  >
-                    {header}
-                  </th>
-                ))}
+                <th scope="col" className="px-5 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wider">
+                  Patient
+                </th>
+                <th scope="col" className="px-5 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wider">
+                  National ID
+                </th>
+                <th scope="col" className="px-5 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wider">
+                  Baseline BP
+                </th>
+                <th scope="col" className="px-5 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wider">
+                  Baseline Glucose
+                </th>
+                <th scope="col" className="px-5 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wider">
+                  Active Prescriptions
+                </th>
+                <th scope="col" className="px-5 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wider text-right">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {patients.map((p) => (
-                <tr key={p.patient_id}>
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-slate-900">{p.full_name}</p>
-                    <p className="text-xs text-slate-500">
-                      {p.active_prescriptions.map((rx) => rx.medication_name).join(', ') ||
-                        'No prescriptions'}
-                    </p>
+              {filteredPatients.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-12 text-center text-slate-400 text-sm">
+                    No patients match your search criteria.
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs text-slate-600">
-                    {p.national_id}
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">
-                    {formatRange(p.baseline_systolic, p.baseline_diastolic)}
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">
-                    {formatGlucose(p.baseline_glucose)}
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">
-                    {p.active_prescriptions.length}
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">{p.cycles.length}</td>
                 </tr>
-              ))}
+              ) : (
+                filteredPatients.map((p) => {
+                  const idInfo = parseEgyptianNationalId(p.national_id)
+                  return (
+                    <tr
+                      key={p.patient_id}
+                      className="hover:bg-slate-50/80 transition duration-150"
+                    >
+                      <td className="px-5 py-3.5">
+                        <Link
+                          to={`/patients/${p.patient_id}`}
+                          className="font-semibold text-blue-600 hover:text-blue-800 hover:underline block"
+                        >
+                          {p.full_name}
+                        </Link>
+                        <span className="text-xs text-slate-500">{p.phone_number}</span>
+                      </td>
+
+                      <td className="px-5 py-3.5">
+                        <span className="font-mono text-xs font-medium text-slate-700 block">
+                          {p.national_id}
+                        </span>
+                        {idInfo.isValid && (
+                          <span className="inline-block text-[10px] text-slate-400">
+                            {idInfo.governorate} • {idInfo.gender} • {idInfo.age}y
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="px-5 py-3.5 text-slate-800">
+                        <span className="font-semibold">
+                          {formatRange(p.baseline_systolic, p.baseline_diastolic)}
+                        </span>
+                        <span className="text-xs text-slate-500 ml-1">mmHg</span>
+                      </td>
+
+                      <td className="px-5 py-3.5 text-slate-800">
+                        {p.baseline_glucose ? (
+                          <>
+                            <span className="font-semibold">
+                              {formatGlucose(p.baseline_glucose)}
+                            </span>
+                            <span className="text-xs text-slate-500 ml-1">mg/dL</span>
+                          </>
+                        ) : (
+                          <span className="text-slate-400 text-xs">—</span>
+                        )}
+                      </td>
+
+                      <td className="px-5 py-3.5">
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+                          {p.active_prescriptions.length} Active
+                        </span>
+                        <p className="text-[11px] text-slate-400 mt-0.5 truncate max-w-xs">
+                          {p.active_prescriptions.map((rx) => rx.medication_name).join(', ') ||
+                            'None'}
+                        </p>
+                      </td>
+
+                      <td className="px-5 py-3.5 text-right">
+                        <Link
+                          to={`/patients/${p.patient_id}`}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition"
+                        >
+                          <span>Inspect</span>
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </Link>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Registration Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl my-8 rounded-2xl bg-white p-6 sm:p-8 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+              <h2 className="text-lg font-bold text-slate-900">Register New Patient</h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <PatientRegistrationForm
+              isModal
+              onSuccess={handleRegistrationSuccess}
+              onCancel={() => setShowModal(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
