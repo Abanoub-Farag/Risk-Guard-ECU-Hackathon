@@ -42,6 +42,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     "apps.common.apps.CommonConfig",
     "apps.patients.apps.PatientsConfig",
+    "apps.refills.apps.RefillsConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -154,10 +155,16 @@ REST_FRAMEWORK = {
         "anon": env.str("THROTTLE_ANON_RATE", "100/hour"),
         "user": env.str("THROTTLE_USER_RATE", "1000/hour"),
         "patients": env.str("THROTTLE_PATIENTS_RATE", "300/hour"),
+        "refills": env.str("THROTTLE_REFILLS_RATE", "300/hour"),
     },
     "EXCEPTION_HANDLER": "apps.common.api.exceptions.custom_exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
+
+# Egyptian Data Residency & Sovereign Storage Configuration
+STORAGE_SOVEREIGN_REGION = env.str("STORAGE_SOVEREIGN_REGION", "eg-north-1")
+STORAGE_SOVEREIGN_BUCKET = env.str("STORAGE_SOVEREIGN_BUCKET", "egypt-sovereign-health-records")
+MAX_UPLOAD_SIZE_BYTES = env.int("MAX_UPLOAD_SIZE_BYTES", 10 * 1024 * 1024)  # 10 MB
 
 # SimpleJWT Configuration
 SIMPLE_JWT = {
