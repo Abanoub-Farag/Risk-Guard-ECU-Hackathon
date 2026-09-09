@@ -1,0 +1,8 @@
+/* Audit Trail specific styles */
+.audit-timeline-node {
+  transition: all 0.2s ease;
+}
+
+.audit-timeline-node:hover {
+  transform: translateX(4px);
+}
