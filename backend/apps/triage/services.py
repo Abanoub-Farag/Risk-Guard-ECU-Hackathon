@@ -205,4 +205,9 @@ class TriageEvaluationService:
         refill_request.status = new_status
         refill_request.save(update_fields=["status", "updated_at"])
 
+        # Automatically issue digital e-prescription voucher upon claim approval
+        if new_status == RefillStatus.APPROVED:
+            from apps.vouchers.services import voucher_issue_for_refill
+            voucher_issue_for_refill(refill_request=refill_request)
+
         return triage_record, ocr_result

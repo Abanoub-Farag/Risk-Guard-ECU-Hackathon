@@ -110,4 +110,9 @@ def adjudication_submit(
 
     refill_request.save(update_fields=["status", "updated_at"])
 
+    # Automatically issue digital e-prescription voucher upon claim approval
+    if decision == AdjudicationDecision.APPROVE:
+        from apps.vouchers.services import voucher_issue_for_refill
+        voucher_issue_for_refill(refill_request=refill_request)
+
     return adjudication
