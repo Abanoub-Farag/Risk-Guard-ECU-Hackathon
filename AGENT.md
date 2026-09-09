@@ -2,7 +2,7 @@
 
 ## 1. System Overview
 
-- **Project Purpose**: Production-ready Clean-Architecture REST API service providing chronic patient registration, baseline biometric anchoring, prescription tracking, monthly refill intake with device screen capture ingestion, asynchronous task queuing, and strict OpenAPI-documented endpoints.
+- **Project Purpose**: Production-ready Clean-Architecture REST API service providing chronic patient registration, baseline biometric anchoring, prescription tracking, monthly refill intake with device screen capture ingestion, OCR metric extraction and automated triage engine routing, asynchronous task queuing, and strict OpenAPI-documented endpoints.
 - **Architectural Style**: Modular Monolith adhering to the Service-Selector Pattern (Clean Architecture for Django/DRF), featuring decoupled domain services, read-only query selectors, and isolated API transport layers.
 - **Runtime Environment**: Linux OS baseline (`python:3.12-slim-bookworm`), containerized via Docker BuildKit (syntax 1.7) and Docker Compose v2, targeting container orchestration or cloud VM runtimes.
 
