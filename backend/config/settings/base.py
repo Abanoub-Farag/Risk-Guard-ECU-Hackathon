@@ -43,6 +43,7 @@ LOCAL_APPS = [
     "apps.common.apps.CommonConfig",
     "apps.patients.apps.PatientsConfig",
     "apps.refills.apps.RefillsConfig",
+    "apps.triage.apps.TriageConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
