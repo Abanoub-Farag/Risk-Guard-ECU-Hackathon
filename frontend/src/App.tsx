@@ -9,7 +9,7 @@ import {
   PatientRegistrationPage,
   PatientProfilePage,
 } from './features/patient-registry'
-import RefillIntakePage from './features/refills/RefillIntakePage'
+import { RefillIntakePage, RefillDetailsPage } from './features/refill-intake'
 import AdjudicationsPage from './features/adjudications/AdjudicationsPage'
 import PharmacyPage from './features/pharmacy/PharmacyPage'
 
@@ -27,6 +27,7 @@ export default function App() {
               <Route path="/patients/new" element={<PatientRegistrationPage />} />
               <Route path="/patients/:id" element={<PatientProfilePage />} />
               <Route path="/refill-intake" element={<RefillIntakePage />} />
+              <Route path="/refills/:id" element={<RefillDetailsPage />} />
               <Route path="/review-queue" element={<AdjudicationsPage />} />
               <Route path="/pharmacy" element={<PharmacyPage />} />
             </Route>

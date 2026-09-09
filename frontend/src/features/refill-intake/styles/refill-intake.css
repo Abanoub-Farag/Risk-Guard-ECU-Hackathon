@@ -1,0 +1,14 @@
+@reference "../../../index.css";
+
+/* Scoped Dropzone and Upload Visual State Utilities */
+.dropzone-active {
+  @apply border-blue-500 bg-blue-50/70 scale-[1.01] transition-all;
+}
+
+.dropzone-idle {
+  @apply border-slate-300 bg-slate-50/50 transition-all hover:border-slate-400 hover:bg-slate-50;
+}
+
+.dropzone-error {
+  @apply border-red-300 bg-red-50/30 transition-all hover:border-red-400;
+}
