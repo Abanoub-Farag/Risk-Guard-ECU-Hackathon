@@ -1,0 +1,25 @@
+.adjudication-split-pane {
+  display: flex;
+  height: calc(100vh - 64px); /* assuming a header exists */
+  overflow: hidden;
+}
+
+.adjudication-left-pane {
+  flex: 1;
+  border-right: 1px solid #e5e7eb;
+  background-color: #f3f4f6;
+  position: relative;
+  overflow: hidden;
+}
+
+.adjudication-right-pane {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #ffffff;
+}
+
+/* Modal overlays */
+.modal-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+}
