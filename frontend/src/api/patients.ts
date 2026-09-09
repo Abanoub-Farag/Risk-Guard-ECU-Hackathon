@@ -1,6 +1,6 @@
 import { apiClient } from './client'
 
-export interface PatientCreateInput {
+export interface CreatePatientDTO {
   national_id: string
   full_name: string
   phone_number: string
@@ -8,6 +8,8 @@ export interface PatientCreateInput {
   baseline_diastolic: number
   baseline_glucose?: number | null
 }
+
+export type PatientCreateInput = CreatePatientDTO
 
 export interface PatientPrescription {
   id: string
@@ -34,14 +36,26 @@ export interface Patient {
   active_prescriptions: PatientPrescription[]
 }
 
-export interface PrescriptionCreateInput {
+export interface CreatePrescriptionDTO {
   medication_name: string
   dosage: string
   refill_interval_days?: number
 }
 
+export type PrescriptionCreateInput = CreatePrescriptionDTO
+
+export interface ApiErrorResponse {
+  type?: string
+  title?: string
+  status: number
+  detail: string
+  instance?: string
+  code?: string
+  errors?: Record<string, string[] | string> | null
+}
+
 export const patientsApi = {
-  createPatient: async (input: PatientCreateInput): Promise<Patient> => {
+  createPatient: async (input: CreatePatientDTO): Promise<Patient> => {
     const response = await apiClient.post<Patient>('patients/', input)
     return response.data
   },
@@ -53,7 +67,7 @@ export const patientsApi = {
 
   addPrescription: async (
     patientId: string,
-    input: PrescriptionCreateInput
+    input: CreatePrescriptionDTO
   ): Promise<PatientPrescription> => {
     const response = await apiClient.post<PatientPrescription>(
       `patients/${patientId}/prescriptions/`,

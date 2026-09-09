@@ -1,0 +1,43 @@
+/* Scoped CSS styles and Tailwind layers for Patient Registry module */
+@reference "../../../index.css";
+
+@layer components {
+  .registry-card {
+    @apply rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition;
+  }
+
+  .registry-input {
+    @apply w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-100;
+  }
+
+  .registry-input-error {
+    @apply border-red-400 bg-red-50/30 text-red-900 focus:border-red-500 focus:ring-2 focus:ring-red-200;
+  }
+
+  .registry-input-valid {
+    @apply border-emerald-400 bg-emerald-50/20 text-slate-900 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200;
+  }
+
+  .registry-badge-active {
+    @apply inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800;
+  }
+
+  .registry-badge-inactive {
+    @apply inline-flex items-center rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-600;
+  }
+
+  .registry-btn-primary {
+    @apply inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 disabled:cursor-not-allowed disabled:bg-slate-300;
+  }
+
+  .registry-btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition duration-150 disabled:opacity-50;
+  }
+}
+
+@layer utilities {
+  .text-tight-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    letter-spacing: 0.15em;
+  }
+}
