@@ -41,7 +41,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "apps.common.apps.CommonConfig",
-    "apps.orders.apps.OrdersConfig",
+    "apps.patients.apps.PatientsConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -153,7 +153,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": env.str("THROTTLE_ANON_RATE", "100/hour"),
         "user": env.str("THROTTLE_USER_RATE", "1000/hour"),
-        "orders": env.str("THROTTLE_ORDERS_RATE", "300/hour"),
+        "patients": env.str("THROTTLE_PATIENTS_RATE", "300/hour"),
     },
     "EXCEPTION_HANDLER": "apps.common.api.exceptions.custom_exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -199,7 +199,6 @@ LOGGING = {
     "disable_existing_loggers": False,
     "formatters": {
         "json": {
-            "()": "django_guid.log_filters.CorrelationIdFilter",
             "format": '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "correlation_id": "%(correlation_id)s", "logger": "%(name)s", "message": "%(message)s"}',
         },
         "console": {
@@ -208,7 +207,7 @@ LOGGING = {
     },
     "filters": {
         "correlation_id": {
-            "()": "django_guid.log_filters.CorrelationIdFilter",
+            "()": "django_guid.log_filters.CorrelationId",
         },
     },
     "handlers": {
