@@ -2,7 +2,7 @@ import { apiClient, clearTokens } from './client'
 import type { AuthTokens } from './client'
 
 export interface LoginCredentials {
-  email: string
+  username: string
   password: string
 }
 
