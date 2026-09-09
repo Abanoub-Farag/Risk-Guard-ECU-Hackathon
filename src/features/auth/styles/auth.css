@@ -1,0 +1,4 @@
+/* Authentication specific styles */
+.login-container {
+  transition: opacity 0.3s ease;
+}
