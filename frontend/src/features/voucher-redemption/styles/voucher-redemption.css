@@ -1,0 +1,30 @@
+@media print {
+  /* Hide everything except the printable receipt area */
+  body * {
+    visibility: hidden;
+  }
+  
+  .print-receipt-container, .print-receipt-container * {
+    visibility: visible;
+  }
+  
+  .print-receipt-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-area {
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
