@@ -1,21 +1,11 @@
-export interface BiometricValidationErrors {
-  systolic?: string
-  diastolic?: string
-  bloodPressure?: string
-  glucose?: string
-}
+import type { VitalsValidationErrors, VitalsValidationResult } from '../types/patient.types'
 
-export interface BiometricValidationResult {
-  isValid: boolean
-  errors: BiometricValidationErrors
-}
-
-export const validateBiometrics = (
+export const validateVitals = (
   systolic: number | null | undefined,
   diastolic: number | null | undefined,
   glucose?: number | null
-): BiometricValidationResult => {
-  const errors: BiometricValidationErrors = {}
+): VitalsValidationResult => {
+  const errors: VitalsValidationErrors = {}
 
   if (systolic === null || systolic === undefined || Number.isNaN(systolic)) {
     errors.systolic = 'Baseline systolic pressure is required'

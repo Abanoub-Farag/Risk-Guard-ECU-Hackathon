@@ -1,12 +1,12 @@
-import { useState, useMemo, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useData } from '../../hooks/useData'
-import { formatGlucose, formatRange } from '../dashboard/helpers'
-import PatientRegistrationForm from './components/PatientRegistrationForm'
-import { parseEgyptianNationalId } from './utils/nationalId'
-import type { Patient } from '../../api/patients'
+import { useData } from '../../../hooks/useData'
+import { formatGlucose, formatRange } from '../../dashboard/helpers'
+import type { Patient } from '../types/patient.types'
+import { parseEgyptianNationalId } from '../utils/national-id.validator'
+import PatientRegistrationPage from './PatientRegistrationPage'
 
-export default function PatientsPage(): ReactNode {
+export default function PatientsDirectoryPage() {
   const { overview, loading, error, addPatient } = useData()
   const navigate = useNavigate()
 
@@ -28,7 +28,6 @@ export default function PatientsPage(): ReactNode {
   }, [patients, search])
 
   const handleRegistrationSuccess = (newPatient: Patient) => {
-    // Also sync with shared mock overview data for seamless client navigation
     addPatient({
       national_id: newPatient.national_id,
       full_name: newPatient.full_name,
@@ -119,7 +118,7 @@ export default function PatientsPage(): ReactNode {
         </span>
       </div>
 
-      {/* Patient Directory Table */}
+      {/* Directory Table */}
       <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-slate-200">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -231,13 +230,14 @@ export default function PatientsPage(): ReactNode {
         </div>
       </div>
 
-      {/* Registration Modal */}
+      {/* Modal Dialog */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="w-full max-w-2xl my-8 rounded-2xl bg-white p-6 sm:p-8 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
               <h2 className="text-lg font-bold text-slate-900">Register New Patient</h2>
               <button
+                type="button"
                 onClick={() => setShowModal(false)}
                 className="text-slate-400 hover:text-slate-600 text-xl font-bold"
               >
@@ -245,7 +245,7 @@ export default function PatientsPage(): ReactNode {
               </button>
             </div>
 
-            <PatientRegistrationForm
+            <PatientRegistrationPage
               isModal
               onSuccess={handleRegistrationSuccess}
               onCancel={() => setShowModal(false)}

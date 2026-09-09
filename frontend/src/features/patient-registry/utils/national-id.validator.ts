@@ -1,3 +1,5 @@
+import type { Gender, NationalIdParseResult } from '../types/patient.types'
+
 export const EGYPTIAN_GOVERNORATES: Record<string, { en: string; ar: string }> = {
   '01': { en: 'Cairo', ar: 'القاهرة' },
   '02': { en: 'Alexandria', ar: 'الإسكندرية' },
@@ -29,17 +31,6 @@ export const EGYPTIAN_GOVERNORATES: Record<string, { en: string; ar: string }> =
   '88': { en: 'Born Abroad', ar: 'خارج الجمهورية' },
 }
 
-export interface ParsedNationalId {
-  isValid: boolean
-  error?: string
-  birthDate?: Date
-  birthDateFormatted?: string
-  governorateCode?: string
-  governorate?: string
-  gender?: 'Male' | 'Female'
-  age?: number
-}
-
 export const isLeapYear = (year: number): boolean => {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0
 }
@@ -49,10 +40,14 @@ export const getDaysInMonth = (year: number, month: number): number => {
   return daysMap[month - 1] ?? 0
 }
 
+export const cleanNationalId = (input: string): string => {
+  return input.replace(/\D/g, '').slice(0, 14)
+}
+
 export const parseEgyptianNationalId = (
   nationalId: string,
   currentDate: Date = new Date()
-): ParsedNationalId => {
+): NationalIdParseResult => {
   if (!nationalId || typeof nationalId !== 'string') {
     return { isValid: false, error: 'National ID is required' }
   }
@@ -77,8 +72,8 @@ export const parseEgyptianNationalId = (
       error: `Invalid century digit '${centuryDigit}'. First digit must be 2 (1900–1999) or 3 (2000–2099)`,
     }
   }
-  const centuryBase = centuryDigit === '2' ? 1900 : 2000
 
+  const centuryBase = centuryDigit === '2' ? 1900 : 2000
   const yy = parseInt(clean.substring(1, 3), 10)
   const mm = parseInt(clean.substring(3, 5), 10)
   const dd = parseInt(clean.substring(5, 7), 10)
@@ -125,7 +120,7 @@ export const parseEgyptianNationalId = (
   }
 
   const genderDigit = parseInt(clean[12], 10)
-  const gender: 'Male' | 'Female' = genderDigit % 2 !== 0 ? 'Male' : 'Female'
+  const gender: Gender = genderDigit % 2 !== 0 ? 'Male' : 'Female'
 
   let age = currentDate.getFullYear() - year
   const monthDiff = currentDate.getMonth() - (mm - 1)
@@ -144,8 +139,4 @@ export const parseEgyptianNationalId = (
     gender,
     age,
   }
-}
-
-export const cleanNationalId = (input: string): string => {
-  return input.replace(/\D/g, '').slice(0, 14)
 }
