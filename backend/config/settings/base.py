@@ -45,6 +45,7 @@ LOCAL_APPS = [
     "apps.refills.apps.RefillsConfig",
     "apps.triage.apps.TriageConfig",
     "apps.adjudications.apps.AdjudicationsConfig",
+    "apps.vouchers.apps.VouchersConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
