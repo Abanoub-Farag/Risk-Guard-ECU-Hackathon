@@ -24,7 +24,8 @@ COPY pyproject.toml .
 
 # Install dependencies into virtual environment
 RUN uv venv /opt/venv && \
-    uv pip install --no-cache -r <(uv pip compile pyproject.toml)
+    uv pip compile pyproject.toml -o /tmp/requirements.txt && \
+    VIRTUAL_ENV=/opt/venv uv pip install --no-cache -r /tmp/requirements.txt
 
 # Stage 2: Minimal production runtime stage
 FROM python:3.12-slim-bookworm AS runner
