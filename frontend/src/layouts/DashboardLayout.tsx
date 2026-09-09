@@ -1,9 +1,12 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/patients', label: 'Patients' },
+  { to: '/refill-intake', label: 'Refill Intake' },
+  { to: '/review-queue', label: 'Review Queue' },
+  { to: '/pharmacy', label: 'Pharmacy' },
 ]
 
 export default function DashboardLayout() {
@@ -11,6 +14,7 @@ export default function DashboardLayout() {
   const navigate = useNavigate()
 
   const handleLogout = () => {
+    if (!user) return
     logout()
     navigate('/login')
   }
@@ -41,14 +45,23 @@ export default function DashboardLayout() {
       <div className="ml-56 flex min-h-screen flex-col">
         <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6">
           <span className="text-sm text-slate-500" data-testid="topbar">
-            {user?.username ?? ''}
+            {user?.username ?? 'Guest'}
           </span>
-          <button
-            onClick={handleLogout}
-            className="rounded-md px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
-          >
-            Sign out
-          </button>
+          {user ? (
+            <button
+              onClick={handleLogout}
+              className="rounded-md px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+            >
+              Sign out
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              className="rounded-md px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50"
+            >
+              Sign in
+            </Link>
+          )}
         </header>
 
         <main className="flex-1 p-6">

@@ -1,26 +1,33 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './hooks/useAuth'
-import ProtectedRoute from './components/ProtectedRoute'
+import { DataProvider } from './hooks/useData'
 import DashboardLayout from './layouts/DashboardLayout'
 import LoginPage from './features/auth/LoginPage'
-import DashboardPage from './pages/DashboardPage'
-import PatientsPage from './pages/PatientsPage'
+import DashboardPage from './features/dashboard/DashboardPage'
+import PatientsPage from './features/patients/PatientsPage'
+import RefillIntakePage from './features/refills/RefillIntakePage'
+import AdjudicationsPage from './features/adjudications/AdjudicationsPage'
+import PharmacyPage from './features/pharmacy/PharmacyPage'
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route element={<ProtectedRoute />}>
+    <DataProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
             <Route element={<DashboardLayout />}>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/patients" element={<PatientsPage />} />
+              <Route path="/refill-intake" element={<RefillIntakePage />} />
+              <Route path="/review-queue" element={<AdjudicationsPage />} />
+              <Route path="/pharmacy" element={<PharmacyPage />} />
             </Route>
-          </Route>
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </DataProvider>
   )
 }
