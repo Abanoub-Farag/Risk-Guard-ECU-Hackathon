@@ -1,0 +1,52 @@
+[project]
+name = "enterprise-drf-template"
+version = "0.1.0"
+description = "Production-ready Clean-Architecture Django REST Framework API"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.1,<5.2",
+    "djangorestframework>=3.15.2",
+    "django-environ>=0.11.2",
+    "django-cors-headers>=4.4.0",
+    "djangorestframework-simplejwt>=5.3.1",
+    "drf-spectacular>=0.27.2",
+    "psycopg[binary,pool]>=3.2.1",
+    "django-redis>=5.4.0",
+    "redis>=5.0.8",
+    "celery>=5.4.0",
+    "django-guid>=3.4.1",
+    "structlog>=24.4.0",
+    "gunicorn>=23.0.0",
+    "uvicorn>=0.30.6",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.2",
+    "pytest-django>=4.9.0",
+    "pytest-cov>=5.0.0",
+    "factory-boy>=3.3.1",
+    "mypy>=1.11.2",
+    "django-stubs[compatible-mypy]>=5.0.4",
+    "djangorestframework-stubs[compatible-mypy]>=3.15.1",
+    "ruff>=0.6.4",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py", "*_test.py"]
+addopts = "--cov=apps --cov-report=term-missing --cov-fail-under=85"
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+strict = true
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
