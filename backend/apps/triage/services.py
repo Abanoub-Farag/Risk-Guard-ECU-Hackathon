@@ -202,8 +202,11 @@ class TriageEvaluationService:
         )
 
         # Synchronize parent refill request status
-        refill_request.status = new_status
-        refill_request.save(update_fields=["status", "updated_at"])
+        from apps.refills.services import refill_request_update_status
+        refill_request = refill_request_update_status(
+            refill_request=refill_request,
+            new_status=new_status,
+        )
 
         # Automatically issue digital e-prescription voucher upon claim approval
         if new_status == RefillStatus.APPROVED:

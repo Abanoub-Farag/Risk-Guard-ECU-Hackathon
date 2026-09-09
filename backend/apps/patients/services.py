@@ -147,14 +147,24 @@ def prescription_dispense(
 ) -> PatientPrescription:
     """
     Records a dispensation event by updating last_dispensed_at to the current system timestamp.
+    Acquires a row lock to prevent concurrent modifications.
     """
-    if not prescription.is_active:
+    try:
+        locked_prescription = PatientPrescription.objects.select_for_update().get(id=prescription.id)
+    except PatientPrescription.DoesNotExist:
+        raise ApplicationError(
+            message="Prescription not found.",
+            code="prescription_not_found",
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
+
+    if not locked_prescription.is_active:
         raise ApplicationError(
             message="Cannot dispense an inactive prescription.",
             code="prescription_inactive",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    prescription.last_dispensed_at = timezone.now()
-    prescription.save(update_fields=["last_dispensed_at", "updated_at"])
-    return prescription
+    locked_prescription.last_dispensed_at = timezone.now()
+    locked_prescription.save(update_fields=["last_dispensed_at", "updated_at"])
+    return locked_prescription

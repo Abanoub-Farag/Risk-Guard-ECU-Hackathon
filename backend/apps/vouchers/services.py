@@ -127,8 +127,8 @@ def voucher_redeem_pos(
     voucher.save(update_fields=["status", "dispensed_at", "dispensing_pharmacy_id", "updated_at"])
 
     # 6. Synchronize Prescription Dispensing Record
+    from apps.patients.services import prescription_dispense
     prescription = voucher.refill_request.prescription
-    prescription.last_dispensed_at = now
-    prescription.save(update_fields=["last_dispensed_at", "updated_at"])
+    prescription_dispense(prescription=prescription)
 
     return voucher

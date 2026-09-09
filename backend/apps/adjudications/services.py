@@ -104,11 +104,15 @@ def adjudication_submit(
 
     # Atomic parent status transition
     if decision == AdjudicationDecision.APPROVE:
-        refill_request.status = RefillStatus.APPROVED
+        new_status = RefillStatus.APPROVED
     else:
-        refill_request.status = RefillStatus.REJECTED
+        new_status = RefillStatus.REJECTED
 
-    refill_request.save(update_fields=["status", "updated_at"])
+    from apps.refills.services import refill_request_update_status
+    refill_request = refill_request_update_status(
+        refill_request=refill_request,
+        new_status=new_status,
+    )
 
     # Automatically issue digital e-prescription voucher upon claim approval
     if decision == AdjudicationDecision.APPROVE:

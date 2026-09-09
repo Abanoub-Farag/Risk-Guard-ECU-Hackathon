@@ -2,7 +2,7 @@ import datetime
 import uuid
 from datetime import timedelta
 from django.core.files.uploadedfile import UploadedFile
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import status
 from apps.common.exceptions import ApplicationError
@@ -79,13 +79,20 @@ def refill_request_create(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    refill_request = RefillRequest.objects.create(
-        patient=patient,
-        prescription=prescription,
-        status=RefillStatus.SUBMITTED,
-        missed_doses_past_week=missed_doses_past_week,
-        has_severe_symptoms=has_severe_symptoms,
-    )
+    try:
+        refill_request = RefillRequest.objects.create(
+            patient=patient,
+            prescription=prescription,
+            status=RefillStatus.SUBMITTED,
+            missed_doses_past_week=missed_doses_past_week,
+            has_severe_symptoms=has_severe_symptoms,
+        )
+    except IntegrityError as exc:
+        raise ApplicationError(
+            message=f"An active refill request is already pending for prescription '{prescription_id}'.",
+            code="refill_request_pending_conflict",
+            status_code=status.HTTP_409_CONFLICT,
+        ) from exc
 
     return refill_request
 
@@ -143,5 +150,27 @@ def refill_request_submit_for_review(
         )
 
     refill_request.status = RefillStatus.NEEDS_REVIEW
+    refill_request.save(update_fields=["status", "updated_at"])
+    return refill_request
+
+
+@transaction.atomic
+def refill_request_update_status(
+    *,
+    refill_request: RefillRequest,
+    new_status: str,
+) -> RefillRequest:
+    """
+    Centralized state transition function for refill requests.
+    Validates status and updates atomically.
+    """
+    if new_status not in RefillStatus.values:
+        raise ApplicationError(
+            message=f"Invalid refill status '{new_status}'.",
+            code="invalid_refill_status",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    refill_request.status = new_status
     refill_request.save(update_fields=["status", "updated_at"])
     return refill_request

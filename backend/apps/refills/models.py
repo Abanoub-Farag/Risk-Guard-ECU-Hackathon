@@ -64,6 +64,11 @@ class RefillRequest(BaseModel):
                 condition=Q(missed_doses_past_week__gte=0),
                 name="chk_refill_missed_doses_non_negative",
             ),
+            models.UniqueConstraint(
+                fields=["prescription"],
+                condition=Q(status__in=[RefillStatus.SUBMITTED, RefillStatus.NEEDS_REVIEW, RefillStatus.PROCESSED]),
+                name="uq_refill_prescription_pending",
+            ),
         ]
         indexes = [
             models.Index(fields=["patient", "status"], name="idx_refill_patient_status"),
@@ -102,6 +107,10 @@ class DeviceScan(BaseModel):
             models.CheckConstraint(
                 condition=Q(device_type__in=DeviceType.values),
                 name="chk_device_type_valid",
+            ),
+            models.UniqueConstraint(
+                fields=["refill_request", "device_type"],
+                name="uq_device_scan_refill_type",
             ),
         ]
         indexes = [

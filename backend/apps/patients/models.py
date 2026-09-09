@@ -50,7 +50,7 @@ class Patient(BaseModel):
                 name="chk_patient_systolic_greater_than_diastolic",
             ),
             models.CheckConstraint(
-                condition=Q(baseline_glucose__isnull=True) | Q(baseline_glucose__gt=0),
+                condition=Q(baseline_glucose__isnull=True) | (Q(baseline_glucose__gt=0) & Q(baseline_glucose__lte=1000)),
                 name="chk_patient_glucose_positive",
             ),
         ]
