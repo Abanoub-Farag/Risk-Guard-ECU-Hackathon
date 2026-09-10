@@ -9,21 +9,16 @@ import {
 } from 'react'
 import {
   dashboardApi,
-  type CycleData,
   type DashboardOverview,
-  type PatientTelemetry,
 } from '../api/dashboard'
 import { getErrorMessage } from '../api/errors'
 import type { VoucherView } from '../api/vouchers'
 import {
   activeVouchers,
-  computeOverviewTotals,
-  evaluateTriage,
   type IntakeReading,
   type TriageVerdict,
 } from '../features/dashboard/helpers'
-
-const STORAGE_KEY = 'riskguard_data_v1'
+import { apiClient } from '../api/client'
 
 export interface PatientCreateInput {
   national_id: string
@@ -49,32 +44,32 @@ interface DataContextValue {
   loading: boolean
   error: string | null
   vouchers: VoucherView[]
-  addPatient: (input: PatientCreateInput) => boolean
+  addPatient: (input: PatientCreateInput) => void
   addPrescription: (patientId: string, input: PrescriptionInput) => void
   addCycle: (patientId: string, reading: IntakeReading) => TriageVerdict | null
-  decide: (cycleId: string, decision: 'APPROVE' | 'REJECT', note: string) => void
-  redeemVoucher: (code: string, nationalId: string) => RedeemResult
+  decide: (cycleId: string, decision: 'APPROVE' | 'REJECT', note: string) => Promise<void>
+  redeemVoucher: (code: string, nationalId: string) => Promise<RedeemResult>
+  refresh: () => Promise<void>
 }
 
 const DataContext = createContext<DataContextValue | undefined>(undefined)
 
 export function DataProvider({ children }: { children: ReactNode }) {
-  const [overview, setOverview] = useState<DashboardOverview | null>(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) {
-        return computeOverviewTotals(JSON.parse(raw) as DashboardOverview)
-      }
-    } catch {
-      // ignore corrupted storage
-    }
-    return null
-  })
-  const [loading, setLoading] = useState<boolean>(overview === null)
+  const [overview, setOverview] = useState<DashboardOverview | null>(null)
+  const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
+  const refresh = useCallback(async () => {
+    try {
+      const data = await dashboardApi.getOverview()
+      setOverview(data)
+      setError(null)
+    } catch (err) {
+      setError(getErrorMessage(err))
+    }
+  }, [])
+
   useEffect(() => {
-    if (overview !== null) return
     let ignored = false
     dashboardApi
       .getOverview()
@@ -82,7 +77,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (!ignored) {
           setLoading(false)
           setError(null)
-          setOverview(computeOverviewTotals(data))
+          setOverview(data)
         }
       })
       .catch((err) => {
@@ -94,132 +89,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return () => {
       ignored = true
     }
-  }, [overview])
+  }, [])
 
-  useEffect(() => {
-    if (overview === null) return
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(overview))
-    } catch {
-      // storage unavailable
-    }
-  }, [overview])
+  const addPatient = useCallback((_input: PatientCreateInput): void => {
+    // Triggers refresh since actual API is handled in components
+    void refresh()
+  }, [refresh])
 
-  const apply = useCallback(
-    (updater: (prev: DashboardOverview) => DashboardOverview) => {
-      setOverview((prev) =>
-        prev ? computeOverviewTotals(updater(prev)) : prev
-      )
-    },
-    []
-  )
+  const addPrescription = useCallback((_patientId: string, _input: PrescriptionInput) => {
+    // Triggers refresh since actual API is handled in components
+    void refresh()
+  }, [refresh])
 
-  const addPatient = useCallback(
-    (input: PatientCreateInput): boolean => {
-      const exists = overview?.patients.some(
-        (p) => p.national_id === input.national_id
-      )
-      if (exists) return false
-      const patient: PatientTelemetry = {
-        patient_id: crypto.randomUUID(),
-        full_name: input.full_name,
-        national_id: input.national_id,
-        phone_number: input.phone_number,
-        baseline_systolic: input.baseline_systolic,
-        baseline_diastolic: input.baseline_diastolic,
-        baseline_glucose: input.baseline_glucose,
-        active_prescriptions: [],
-        cycles: [],
-      }
-      apply((prev) => ({ ...prev, patients: [...prev.patients, patient] }))
-      return true
-    },
-    [apply, overview]
-  )
-
-  const addPrescription = useCallback(
-    (patientId: string, input: PrescriptionInput) => {
-      apply((prev) => ({
-        ...prev,
-        patients: prev.patients.map((p) =>
-          p.patient_id === patientId
-            ? {
-                ...p,
-                active_prescriptions: [
-                  ...p.active_prescriptions,
-                  {
-                    id: crypto.randomUUID(),
-                    medication_name: input.medication_name,
-                    dosage: input.dosage,
-                    last_dispensed_at: null,
-                  },
-                ],
-              }
-            : p
-        ),
-      }))
-    },
-    [apply]
-  )
-
-  const addCycle = useCallback(
-    (patientId: string, reading: IntakeReading): TriageVerdict | null => {
-      const patient = overview?.patients.find((p) => p.patient_id === patientId)
-      if (!patient) return null
-
-      const previous = patient.cycles.length
-        ? [...patient.cycles].sort(
-            (a, b) =>
-              new Date(b.submitted_at).getTime() -
-              new Date(a.submitted_at).getTime()
-          )[0]
-        : null
-
-      const verdict = evaluateTriage(reading, patient, previous)
-      const cycle: CycleData = {
-        refill_id: crypto.randomUUID(),
-        submitted_at: new Date().toISOString(),
-        systolic: reading.systolic,
-        diastolic: reading.diastolic,
-        glucose: reading.glucose,
-        triage_color: verdict.triage_color,
-        anomaly_reason: verdict.anomaly_reason,
-        status: verdict.status,
-        missed_doses_past_week: reading.missed_doses_past_week,
-        has_severe_symptoms: reading.has_severe_symptoms,
-        dispensed: false,
-        dispensed_at: null,
-        review_note: null,
-      }
-      apply((prev) => ({
-        ...prev,
-        patients: prev.patients.map((p) =>
-          p.patient_id === patientId
-            ? { ...p, cycles: [...p.cycles, cycle] }
-            : p
-        ),
-      }))
-      return verdict
-    },
-    [apply, overview]
-  )
+  const addCycle = useCallback((_patientId: string, _reading: IntakeReading): TriageVerdict | null => {
+    // Triggers refresh since actual API is handled in components
+    void refresh()
+    return null
+  }, [refresh])
 
   const decide = useCallback(
-    (cycleId: string, decision: 'APPROVE' | 'REJECT', note: string) => {
-      const newStatus = decision === 'APPROVE' ? 'APPROVED' : 'REJECTED'
-      apply((prev) => ({
-        ...prev,
-        patients: prev.patients.map((p) => ({
-          ...p,
-          cycles: p.cycles.map((c) =>
-            c.refill_id === cycleId
-              ? { ...c, status: newStatus, review_note: note }
-              : c
-          ),
-        })),
-      }))
+    async (cycleId: string, decision: 'APPROVE' | 'REJECT', note: string) => {
+      try {
+        await apiClient.post(`refill-requests/${cycleId}/adjudicate`, {
+          decision,
+          clinical_notes: note,
+          rejection_reason_category: decision === 'REJECT' ? 'CLINICAL_CONTRAINDICATION' : null
+        })
+        await refresh()
+      } catch (err) {
+        console.error(err)
+        throw err
+      }
     },
-    [apply]
+    [refresh]
   )
 
   const vouchers = useMemo(
@@ -228,33 +130,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
   )
 
   const redeemVoucher = useCallback(
-    (code: string, nationalId: string): RedeemResult => {
-      if (!overview) return { ok: false, message: 'Data not loaded yet.' }
-      const voucher = vouchers.find((v) => v.code === code)
-      if (!voucher) {
-        return { ok: false, message: 'Voucher not found or already redeemed.' }
+    async (code: string, nationalId: string): Promise<RedeemResult> => {
+      try {
+        await apiClient.post('vouchers/redeem', {
+          voucher_code: code,
+          national_id: nationalId,
+          dispensing_pharmacy_id: 'HACKATHON_DEMO_PHARMACY'
+        })
+        await refresh()
+        return { ok: true, message: 'Voucher redeemed successfully.' }
+      } catch (err) {
+        return { ok: false, message: getErrorMessage(err) }
       }
-      if (voucher.patient_national_id !== nationalId) {
-        return {
-          ok: false,
-          message: 'National ID does not match this voucher.',
-        }
-      }
-      const dispensedAt = new Date().toISOString()
-      apply((prev) => ({
-        ...prev,
-        patients: prev.patients.map((p) => ({
-          ...p,
-          cycles: p.cycles.map((c) =>
-            c.refill_id === voucher.refill_id
-              ? { ...c, dispensed: true, dispensed_at: dispensedAt }
-              : c
-          ),
-        })),
-      }))
-      return { ok: true, message: 'Voucher redeemed successfully.' }
     },
-    [apply, overview, vouchers]
+    [refresh]
   )
 
   return (
@@ -269,6 +158,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         addCycle,
         decide,
         redeemVoucher,
+        refresh,
       }}
     >
       {children}

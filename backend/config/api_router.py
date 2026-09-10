@@ -8,6 +8,7 @@ urlpatterns = [
     path("", include("apps.triage.api.urls", namespace="triage")),
     path("", include("apps.adjudications.api.urls", namespace="adjudications")),
     path("", include("apps.vouchers.api.urls", namespace="vouchers")),
+    path("", include("apps.dashboard.api.urls", namespace="dashboard")),
 ]
 
 

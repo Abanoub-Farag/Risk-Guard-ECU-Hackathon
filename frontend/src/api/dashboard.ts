@@ -46,7 +46,7 @@ export interface DashboardOverview {
   patients: PatientTelemetry[]
 }
 
-const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false'
+const USE_MOCK = false
 
 const delay = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))

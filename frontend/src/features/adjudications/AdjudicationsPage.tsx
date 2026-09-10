@@ -20,12 +20,17 @@ export default function AdjudicationsPage(): ReactNode {
 
   const queue = overview ? reviewQueue(overview.patients) : []
 
-  const handleDecide = (cycleId: string, decision: 'APPROVE' | 'REJECT', e: FormEvent) => {
+  const handleDecide = async (cycleId: string, decision: 'APPROVE' | 'REJECT', e: FormEvent) => {
     e.preventDefault()
-    decide(cycleId, decision, note)
-    setMessage(decision === 'APPROVE' ? 'Approved — voucher issued.' : 'Rejected — patient notified.')
-    setSelectedCycleId(null)
-    setNote('')
+    try {
+      await decide(cycleId, decision, note)
+      setMessage(decision === 'APPROVE' ? 'Approved — voucher issued.' : 'Rejected — patient notified.')
+      setSelectedCycleId(null)
+      setNote('')
+    } catch (err) {
+      // error is logged in useData, but we could also show a toast here
+      setMessage('Failed to submit decision.')
+    }
   }
 
   return (

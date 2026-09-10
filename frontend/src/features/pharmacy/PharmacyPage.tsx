@@ -44,12 +44,12 @@ export default function PharmacyPage(): ReactNode {
     })
   }
 
-  const handleRedeem = (e: FormEvent) => {
+  const handleRedeem = async (e: FormEvent) => {
     e.preventDefault()
     if (!found) return
     setIsError(false)
     setMessage(null)
-    const result = redeemVoucher(found.code, nationalId.trim())
+    const result = await redeemVoucher(found.code, nationalId.trim())
     if (!result.ok) {
       setMessage(result.message)
       setIsError(true)
