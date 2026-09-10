@@ -48,7 +48,7 @@ export default function LoginPage() {
               htmlFor="email"
               className="block text-sm font-medium text-slate-700"
             >
-              Email
+              Username
             </label>
             <input
               id="email"
@@ -85,6 +85,12 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+
+        <div className="mt-4 rounded-md bg-slate-100 p-3 text-xs text-slate-600">
+          Demo credentials — username:{' '}
+          <code className="font-mono">admin</code> / password:{' '}
+          <code className="font-mono">RiskGuard@123</code>
+        </div>
 
         <div className="mt-6 text-center text-sm text-slate-600">
           Don't have an account?{' '}
