@@ -10,7 +10,6 @@ export interface CycleData {
   systolic: number | null
   diastolic: number | null
   glucose: number | null
-  confidence_score: number | null
   triage_color: TriageColor | null
   anomaly_reason: string | null
   status: RefillStatus

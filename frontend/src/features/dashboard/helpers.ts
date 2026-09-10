@@ -74,9 +74,6 @@ export const formatDate = (value: string | null): string => {
   })
 }
 
-export const formatConfidence = (value: number | null): string =>
-  value === null ? '—' : `${(value * 100).toFixed(0)}%`
-
 export const formatRange = (
   systolic: number | null,
   diastolic: number | null

@@ -182,7 +182,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         systolic: reading.systolic,
         diastolic: reading.diastolic,
         glucose: reading.glucose,
-        confidence_score: 0.95,
         triage_color: verdict.triage_color,
         anomaly_reason: verdict.anomaly_reason,
         status: verdict.status,

@@ -1,12 +1,9 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useData } from '../../../hooks/useData'
-import { DeviceImageDropzone } from '../components/DeviceImageDropzone'
-import { DeviceTypeSelector } from '../components/DeviceTypeSelector'
 import { EarlyRefillWarningBanner } from '../components/EarlyRefillWarningBanner'
-import { ImagePreviewCard } from '../components/ImagePreviewCard'
 import { SymptomQuestionnaire } from '../components/SymptomQuestionnaire'
-import { useDeviceScanUpload } from '../hooks/useDeviceScanUpload'
+import { TelemetryInputForm } from '../components/TelemetryInputForm'
 import { useRefillIntake } from '../hooks/useRefillIntake'
 import '../styles/refill-intake.css'
 
@@ -20,6 +17,10 @@ export function RefillIntakePage(): ReactNode {
 
   const [selectedPatientId, setSelectedPatientId] = useState<string>(initialPatientId)
   const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<string>(initialPrescriptionId)
+
+  const [systolic, setSystolic] = useState<number | ''>('')
+  const [diastolic, setDiastolic] = useState<number | ''>('')
+  const [glucose, setGlucose] = useState<number | ''>('')
 
   const patients = useMemo(
     () => overview?.patients ?? [],
@@ -40,21 +41,6 @@ export function RefillIntakePage(): ReactNode {
     () => activePrescriptions.find((rx) => rx.id === selectedPrescriptionId) ?? null,
     [activePrescriptions, selectedPrescriptionId]
   )
-
-  const {
-    deviceType,
-    stagedFile,
-    previewUrl,
-    isDragging,
-    isValidating,
-    validationError,
-    setDeviceType,
-    clearFile,
-    handleDragOver,
-    handleDragLeave,
-    handleDrop,
-    handleFileInputChange,
-  } = useDeviceScanUpload('BLOOD_PRESSURE')
 
   const {
     missedDoses,
@@ -79,15 +65,18 @@ export function RefillIntakePage(): ReactNode {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
 
-    if (!stagedFile) return
     if (timelineValidation.isBlocked) return
+
+    if (!systolic || !diastolic) return
 
     const result = await submitRefillIntake({
       patientId: selectedPatientId,
       prescriptionId: selectedPrescriptionId,
-      file: stagedFile,
-      deviceType,
+      systolic: Number(systolic),
+      diastolic: Number(diastolic),
+      glucose: glucose ? Number(glucose) : null,
     })
+    
     if (result && result.id) {
       navigate(`/refills/${result.id}`)
     }
@@ -96,10 +85,10 @@ export function RefillIntakePage(): ReactNode {
   const isSubmitDisabled =
     !selectedPatientId ||
     !selectedPrescriptionId ||
-    !stagedFile ||
+    !systolic ||
+    !diastolic ||
     timelineValidation.isBlocked ||
-    isSubmitting ||
-    isValidating
+    isSubmitting
 
   if (loading) {
     return <div className="h-64 animate-pulse rounded-xl bg-white shadow-sm" />
@@ -109,10 +98,10 @@ export function RefillIntakePage(): ReactNode {
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Monthly Refill Intake & Device Scan Ingestion
+          Monthly Refill Intake
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Initiate a monthly prescription refill request and ingest biometric LCD screen captures for automated triage.
+          Initiate a monthly prescription refill request and log manual telemetry for automated triage.
         </p>
       </div>
 
@@ -217,7 +206,18 @@ export function RefillIntakePage(): ReactNode {
           <EarlyRefillWarningBanner validation={timelineValidation} />
         </div>
 
-        {/* Step 2: Clinical Adherence Questionnaire */}
+        {/* Step 2: Manual Telemetry Entry */}
+        <TelemetryInputForm
+          systolic={systolic}
+          diastolic={diastolic}
+          glucose={glucose}
+          onSystolicChange={setSystolic}
+          onDiastolicChange={setDiastolic}
+          onGlucoseChange={setGlucose}
+          disabled={timelineValidation.isBlocked || isSubmitting}
+        />
+
+        {/* Step 3: Clinical Adherence Questionnaire */}
         <SymptomQuestionnaire
           missedDoses={missedDoses}
           hasSevereSymptoms={hasSevereSymptoms}
@@ -226,45 +226,6 @@ export function RefillIntakePage(): ReactNode {
           disabled={timelineValidation.isBlocked || isSubmitting}
           error={fieldErrors.missed_doses_past_week}
         />
-
-        {/* Step 3: Medical Device Scan Ingestion */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-5">
-          <div className="border-b border-slate-100 pb-3">
-            <h2 className="text-base font-semibold text-slate-900">
-              2. Medical Device Screen Capture Ingestion
-            </h2>
-            <p className="text-xs text-slate-500">
-              Biometric screen capture is mandatory prior to submitting monthly refills for automated triage.
-            </p>
-          </div>
-
-          <DeviceTypeSelector
-            selectedType={deviceType}
-            onChange={setDeviceType}
-            disabled={timelineValidation.isBlocked || isSubmitting}
-          />
-
-          {!stagedFile || !previewUrl ? (
-            <DeviceImageDropzone
-              isDragging={isDragging}
-              isValidating={isValidating}
-              error={validationError}
-              disabled={timelineValidation.isBlocked || isSubmitting}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onFileInputChange={handleFileInputChange}
-            />
-          ) : (
-            <ImagePreviewCard
-              file={stagedFile}
-              previewUrl={previewUrl}
-              deviceType={deviceType}
-              onRemove={clearFile}
-              disabled={isSubmitting}
-            />
-          )}
-        </div>
 
         {/* Global Error Banner */}
         {apiError && (
@@ -331,8 +292,7 @@ export function RefillIntakePage(): ReactNode {
                 </svg>
                 <span>
                   {submissionStage === 'creating_request' && 'Creating Refill Request…'}
-                  {submissionStage === 'uploading_scan' && 'Ingesting Device Scan…'}
-                  {submissionStage === 'submitting_for_review' && 'Locking Review Pipeline…'}
+                  {submissionStage === 'submitting_telemetry' && 'Evaluating Triage Routing…'}
                 </span>
               </>
             ) : (

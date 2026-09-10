@@ -1,7 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useData } from '../../hooks/useData'
 import {
-  formatConfidence,
   formatDate,
   formatGlucose,
   formatRange,
@@ -100,9 +99,9 @@ export default function AdjudicationsPage(): ReactNode {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500">OCR confidence</p>
+                    <p className="text-xs text-slate-500">Submitted</p>
                     <p className="font-medium text-slate-900">
-                      {formatConfidence(cycle.confidence_score)}
+                      {formatDate(cycle.submitted_at)}
                     </p>
                   </div>
                 </div>

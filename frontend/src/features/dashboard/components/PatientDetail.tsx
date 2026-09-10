@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import type { CycleData, PatientTelemetry } from '../../../api/dashboard'
 import {
-  formatConfidence,
   formatDate,
   formatGlucose,
   formatRange,
@@ -112,9 +111,6 @@ export default function PatientDetail({
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-slate-400">
-                    OCR confidence {formatConfidence(cycle.confidence_score)}
-                  </span>
                 </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">

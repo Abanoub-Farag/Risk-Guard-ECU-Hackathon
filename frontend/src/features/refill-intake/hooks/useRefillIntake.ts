@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { refillApi, RefillApiError } from '../services/refill.api'
+import { triageApi } from '../../../api/triage'
 import type {
-  DeviceType,
   RefillRequest,
   TimelineValidationResult,
 } from '../types/refill.types'
@@ -10,8 +10,7 @@ import { validateRefillTimeline } from '../utils/refill-timeline.validator'
 export type SubmissionStage =
   | 'idle'
   | 'creating_request'
-  | 'uploading_scan'
-  | 'submitting_for_review'
+  | 'submitting_telemetry'
   | 'success'
   | 'error'
 
@@ -24,8 +23,9 @@ export interface UseRefillIntakeOptions {
 export interface SubmitRefillIntakeParams {
   patientId?: string
   prescriptionId?: string
-  file: File | null
-  deviceType: DeviceType
+  systolic: number
+  diastolic: number
+  glucose?: number | null
 }
 
 export interface UseRefillIntakeReturn {
@@ -43,10 +43,7 @@ export interface UseRefillIntakeReturn {
   setMissedDoses: (doses: number) => void
   setHasSevereSymptoms: (val: boolean) => void
   clearErrors: () => void
-  submitRefillIntake: (
-    fileOrParams: File | null | SubmitRefillIntakeParams,
-    deviceType?: DeviceType
-  ) => Promise<RefillRequest | null>
+  submitRefillIntake: (params: SubmitRefillIntakeParams) => Promise<RefillRequest | null>
 }
 
 export function useRefillIntake(
@@ -71,26 +68,12 @@ export function useRefillIntake(
   }
 
   const submitRefillIntake = async (
-    fileOrParams: File | null | SubmitRefillIntakeParams,
-    directDeviceType?: DeviceType
+    params: SubmitRefillIntakeParams
   ): Promise<RefillRequest | null> => {
     clearErrors()
 
-    let targetPatientId = patientId
-    let targetPrescriptionId = prescriptionId
-    let targetFile: File | null
-    let targetDeviceType: DeviceType = directDeviceType ?? 'BLOOD_PRESSURE'
-
-    if (fileOrParams && 'deviceType' in fileOrParams && ('file' in fileOrParams || 'patientId' in fileOrParams)) {
-      const params = fileOrParams as SubmitRefillIntakeParams
-      if (params.patientId) targetPatientId = params.patientId
-      if (params.prescriptionId) targetPrescriptionId = params.prescriptionId
-      targetFile = params.file
-      targetDeviceType = params.deviceType
-    } else {
-      targetFile = fileOrParams as File | null
-      if (directDeviceType) targetDeviceType = directDeviceType
-    }
+    const targetPatientId = params.patientId || patientId
+    const targetPrescriptionId = params.prescriptionId || prescriptionId
 
     if (!targetPatientId) {
       setApiError('Please select a patient.')
@@ -110,8 +93,8 @@ export function useRefillIntake(
       return null
     }
 
-    if (!targetFile) {
-      setApiError('A medical device screen capture image is required prior to submission.')
+    if (!params.systolic || !params.diastolic) {
+      setApiError('Systolic and diastolic readings are required.')
       return null
     }
 
@@ -125,16 +108,16 @@ export function useRefillIntake(
         has_severe_symptoms: hasSevereSymptoms,
       })
 
-      // Step 2: Upload Device Screen Scan
-      setSubmissionStage('uploading_scan')
-      await refillApi.uploadDeviceScan(createdRequest.id, targetDeviceType, targetFile)
-
-      // Step 3: Lock into verification queue
-      setSubmissionStage('submitting_for_review')
-      const finalRequest = await refillApi.submitRefillForReview(createdRequest.id)
+      // Step 2: Submit Telemetry & Evaluate Triage
+      setSubmissionStage('submitting_telemetry')
+      await triageApi.processIntake(createdRequest.id, {
+        systolic: params.systolic,
+        diastolic: params.diastolic,
+        glucose: params.glucose,
+      })
 
       setSubmissionStage('success')
-      return finalRequest
+      return createdRequest
     } catch (err) {
       setSubmissionStage('error')
       if (err instanceof RefillApiError || ('fieldErrors' in (err as object))) {
@@ -158,8 +141,7 @@ export function useRefillIntake(
     submissionStage,
     isSubmitting:
       submissionStage === 'creating_request' ||
-      submissionStage === 'uploading_scan' ||
-      submissionStage === 'submitting_for_review',
+      submissionStage === 'submitting_telemetry',
     apiError,
     fieldErrors,
     timelineValidation,

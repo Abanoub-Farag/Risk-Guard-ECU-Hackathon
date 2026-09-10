@@ -5,18 +5,15 @@ export type TriageColor = 'GREEN' | 'YELLOW' | 'RED'
 export type AnomalyReason =
   | 'PHYSIOLOGICAL_IMPOSSIBILITY'
   | 'SUSPECTED_DATA_FABRICATION'
-  | 'LOW_OCR_CONFIDENCE'
   | 'CLINICAL_VARIANCE_EXCEEDED'
   | 'SEVERE_SYMPTOMS_REPORTED'
 
-export interface OCRResult {
+export interface IntakeTelemetry {
   id: string
   refill_request_id: string
-  confidence_score: string
   systolic: number | null
   diastolic: number | null
   glucose: string | null
-  raw_payload: Record<string, unknown>
   processed_at: string
 }
 
@@ -27,26 +24,23 @@ export interface TriageRecord {
   anomaly_reason: AnomalyReason | null
   evaluated_at: string
   refill_request_status: string
-  ocr_result: OCRResult | null
+  telemetry: IntakeTelemetry | null
 }
 
-export interface ProcessOCRInput {
-  scan_id?: string | null
-  systolic?: number | null
-  diastolic?: number | null
+export interface ProcessIntakeInput {
+  systolic: number
+  diastolic: number
   glucose?: number | null
-  confidence_score?: number | null
-  raw_payload?: Record<string, unknown> | null
 }
 
 export const triageApi = {
-  processOCR: async (
+  processIntake: async (
     refillId: string,
-    input?: ProcessOCRInput
+    input: ProcessIntakeInput
   ): Promise<TriageRecord> => {
     const response = await apiClient.post<TriageRecord>(
-      `refill-requests/${refillId}/process-ocr`,
-      input ?? {}
+      `refill-requests/${refillId}/process-intake/`,
+      input
     )
     return response.data
   },
