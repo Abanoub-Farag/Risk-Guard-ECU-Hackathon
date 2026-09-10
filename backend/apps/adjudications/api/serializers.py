@@ -125,7 +125,6 @@ class AdjudicationClaimDetailOutputSerializer(serializers.Serializer):
     patient = serializers.SerializerMethodField()
     prescription = serializers.SerializerMethodField()
     triage = serializers.SerializerMethodField()
-    current_scan = serializers.SerializerMethodField()
     current_telemetry = serializers.SerializerMethodField()
     prior_cycle_telemetry = serializers.SerializerMethodField()
     adjudication = serializers.SerializerMethodField()
@@ -159,17 +158,6 @@ class AdjudicationClaimDetailOutputSerializer(serializers.Serializer):
             "triage_color": triage.triage_color,
             "anomaly_reason": triage.anomaly_reason,
             "evaluated_at": triage.evaluated_at,
-        }
-
-    def get_current_scan(self, obj: RefillRequest) -> dict[str, Any] | None:
-        scan = obj.scans.order_by("-captured_at").first()
-        if not scan:
-            return None
-        return {
-            "id": scan.id,
-            "device_type": scan.device_type,
-            "image_storage_uri": scan.image_storage_uri,
-            "captured_at": scan.captured_at,
         }
 
     def get_current_telemetry(self, obj: RefillRequest) -> dict[str, Any] | None:

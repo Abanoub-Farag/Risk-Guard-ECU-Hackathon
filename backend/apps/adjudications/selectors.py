@@ -19,7 +19,7 @@ def adjudication_queue_list(
     queryset = (
         RefillRequest.objects.filter(status=RefillStatus.NEEDS_REVIEW)
         .select_related("patient", "prescription", "triage_record")
-        .prefetch_related("scans", "ocr_results")
+        .prefetch_related("telemetry_records")
         .annotate(
             urgency_priority=Case(
                 When(triage_record__triage_color=TriageColor.RED, then=Value(1)),
@@ -45,7 +45,7 @@ def adjudication_claim_detail(*, refill_request_id: UUID) -> RefillRequest:
     try:
         return (
             RefillRequest.objects.select_related("patient", "prescription", "triage_record")
-            .prefetch_related("scans", "ocr_results")
+            .prefetch_related("telemetry_records")
             .get(id=refill_request_id)
         )
     except RefillRequest.DoesNotExist:

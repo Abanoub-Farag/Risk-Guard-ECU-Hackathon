@@ -8,9 +8,9 @@ def dashboard_overview_get() -> Dict[str, Any]:
     patients = Patient.objects.prefetch_related(
         "prescriptions",
         "refill_requests",
-        "refill_requests__intake_telemetry",
+        "refill_requests__telemetry_records",
         "refill_requests__triage_record",
-        "refill_requests__adjudication",
+        "refill_requests__manual_adjudication",
         "refill_requests__voucher"
     ).filter(is_deleted=False)
 
@@ -39,9 +39,10 @@ def dashboard_overview_get() -> Dict[str, Any]:
         for req in refill_requests:
             total_cycles += 1
             
-            telemetry = getattr(req, "intake_telemetry", None)
+            telemetry_records = getattr(req, "telemetry_records", None)
+            telemetry = telemetry_records.order_by("-processed_at").first() if telemetry_records is not None else None
             triage = getattr(req, "triage_record", None)
-            adjudication = getattr(req, "adjudication", None)
+            adjudication = getattr(req, "manual_adjudication", None)
             voucher = getattr(req, "voucher", None)
 
             if triage and triage.triage_color and triage.triage_color != "GREEN":

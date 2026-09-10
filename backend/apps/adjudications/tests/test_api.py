@@ -12,8 +12,8 @@ from apps.adjudications.models import (
     RejectionReasonCategory,
 )
 from apps.patients.models import Patient, PatientPrescription
-from apps.refills.models import DeviceScan, DeviceType, RefillRequest, RefillStatus
-from apps.triage.models import AnomalyReason, OCRResult, TriageColor, TriageRecord
+from apps.refills.models import RefillRequest, RefillStatus
+from apps.triage.models import AnomalyReason, IntakeTelemetry, TriageColor, TriageRecord
 
 User = get_user_model()
 pytestmark = pytest.mark.django_db
@@ -50,6 +50,16 @@ def prescription(patient: Patient) -> PatientPrescription:
     )
 
 
+def _prescription(patient: Patient, name: str) -> PatientPrescription:
+    return PatientPrescription.objects.create(
+        patient=patient,
+        medication_name=name,
+        dosage="5mg daily",
+        refill_interval_days=30,
+        is_active=True,
+    )
+
+
 class TestAdjudicationQueueAPI:
     """
     Integration tests for GET /api/v1/adjudications/queue
@@ -59,59 +69,32 @@ class TestAdjudicationQueueAPI:
         self,
         auth_client: APIClient,
         patient: Patient,
-        prescription: PatientPrescription,
     ) -> None:
         now = timezone.now()
 
+        def new_claim(color: str, reason: str | None, hours_ago: int, status_tag: str = RefillStatus.NEEDS_REVIEW):
+            rx = _prescription(patient, f"Med-{color}-{hours_ago}-{now.microsecond}")
+            refill = RefillRequest.objects.create(
+                patient=patient,
+                prescription=rx,
+                status=status_tag,
+            )
+            RefillRequest.objects.filter(id=refill.id).update(submitted_at=now - timedelta(hours=hours_ago))
+            TriageRecord.objects.create(
+                refill_request=refill,
+                triage_color=color,
+                anomaly_reason=reason,
+            )
+            return refill
+
         # Claim 1: YELLOW, submitted 2 hours ago
-        r1 = RefillRequest.objects.create(
-            patient=patient,
-            prescription=prescription,
-            status=RefillStatus.NEEDS_REVIEW,
-        )
-        RefillRequest.objects.filter(id=r1.id).update(submitted_at=now - timedelta(hours=2))
-        TriageRecord.objects.create(
-            refill_request=r1,
-            triage_color=TriageColor.YELLOW,
-            anomaly_reason=AnomalyReason.LOW_OCR_CONFIDENCE,
-        )
-
-        # Claim 2: RED, submitted 1 hour ago (newer than r1, but higher priority)
-        r2 = RefillRequest.objects.create(
-            patient=patient,
-            prescription=prescription,
-            status=RefillStatus.NEEDS_REVIEW,
-        )
-        RefillRequest.objects.filter(id=r2.id).update(submitted_at=now - timedelta(hours=1))
-        TriageRecord.objects.create(
-            refill_request=r2,
-            triage_color=TriageColor.RED,
-            anomaly_reason=AnomalyReason.PHYSIOLOGICAL_IMPOSSIBILITY,
-        )
-
+        r1 = new_claim(TriageColor.YELLOW, AnomalyReason.CLINICAL_VARIANCE_EXCEEDED, 2)
+        # Claim 2: RED, submitted 1 hour ago (newer, but higher priority)
+        r2 = new_claim(TriageColor.RED, AnomalyReason.PHYSIOLOGICAL_IMPOSSIBILITY, 1)
         # Claim 3: RED, submitted 3 hours ago (older RED -> should precede r2)
-        r3 = RefillRequest.objects.create(
-            patient=patient,
-            prescription=prescription,
-            status=RefillStatus.NEEDS_REVIEW,
-        )
-        RefillRequest.objects.filter(id=r3.id).update(submitted_at=now - timedelta(hours=3))
-        TriageRecord.objects.create(
-            refill_request=r3,
-            triage_color=TriageColor.RED,
-            anomaly_reason=AnomalyReason.SUSPECTED_DATA_FABRICATION,
-        )
-
+        r3 = new_claim(TriageColor.RED, AnomalyReason.SUSPECTED_DATA_FABRICATION, 3)
         # Claim 4: APPROVED (must not appear in queue)
-        r4 = RefillRequest.objects.create(
-            patient=patient,
-            prescription=prescription,
-            status=RefillStatus.APPROVED,
-        )
-        TriageRecord.objects.create(
-            refill_request=r4,
-            triage_color=TriageColor.GREEN,
-        )
+        new_claim(TriageColor.GREEN, None, 1, status_tag=RefillStatus.APPROVED)
 
         url = "/api/v1/adjudications/queue"
         response = auth_client.get(url)
@@ -120,7 +103,7 @@ class TestAdjudicationQueueAPI:
         results = response.json()["results"]
         assert len(results) == 3
 
-        # Ordering check: r3 (RED, 3h ago) -> r2 (RED, 1h ago) -> r1 (YELLOW, 2h ago)
+        # Ordering: r3 (RED, 3h ago) -> r2 (RED, 1h ago) -> r1 (YELLOW, 2h ago)
         assert results[0]["id"] == str(r3.id)
         assert results[0]["triage_color"] == TriageColor.RED
 
@@ -134,11 +117,10 @@ class TestAdjudicationQueueAPI:
         self,
         auth_client: APIClient,
         patient: Patient,
-        prescription: PatientPrescription,
     ) -> None:
         r_red = RefillRequest.objects.create(
             patient=patient,
-            prescription=prescription,
+            prescription=_prescription(patient, "FilteringMedRed"),
             status=RefillStatus.NEEDS_REVIEW,
         )
         TriageRecord.objects.create(
@@ -149,13 +131,13 @@ class TestAdjudicationQueueAPI:
 
         r_yellow = RefillRequest.objects.create(
             patient=patient,
-            prescription=prescription,
+            prescription=_prescription(patient, "FilteringMedYellow"),
             status=RefillStatus.NEEDS_REVIEW,
         )
         TriageRecord.objects.create(
             refill_request=r_yellow,
             triage_color=TriageColor.YELLOW,
-            anomaly_reason=AnomalyReason.LOW_OCR_CONFIDENCE,
+            anomaly_reason=AnomalyReason.CLINICAL_VARIANCE_EXCEEDED,
         )
 
         url = "/api/v1/adjudications/queue?triage_color=RED"
@@ -175,26 +157,26 @@ class TestAdjudicationClaimDetailAPI:
         self,
         auth_client: APIClient,
         patient: Patient,
-        prescription: PatientPrescription,
     ) -> None:
-        # Prior refill and prior OCR result for historical context
+        # Prior refill with telemetry for historical context
+        prior_rx = _prescription(patient, "HistoricalMed")
         prior_refill = RefillRequest.objects.create(
             patient=patient,
-            prescription=prescription,
+            prescription=prior_rx,
             status=RefillStatus.APPROVED,
         )
-        OCRResult.objects.create(
+        IntakeTelemetry.objects.create(
             refill_request=prior_refill,
-            confidence_score=Decimal("0.9600"),
             systolic=118,
             diastolic=78,
             glucose=None,
         )
 
-        # Current refill claim
+        # Current refill claim under review
+        current_rx = _prescription(patient, "CurrentMed")
         current_refill = RefillRequest.objects.create(
             patient=patient,
-            prescription=prescription,
+            prescription=current_rx,
             status=RefillStatus.NEEDS_REVIEW,
             missed_doses_past_week=1,
             has_severe_symptoms=False,
@@ -204,18 +186,11 @@ class TestAdjudicationClaimDetailAPI:
             triage_color=TriageColor.YELLOW,
             anomaly_reason=AnomalyReason.CLINICAL_VARIANCE_EXCEEDED,
         )
-        DeviceScan.objects.create(
+        IntakeTelemetry.objects.create(
             refill_request=current_refill,
-            device_type=DeviceType.BLOOD_PRESSURE,
-            image_storage_uri="s3://vault/scans/current_bp.jpg",
-        )
-        OCRResult.objects.create(
-            refill_request=current_refill,
-            confidence_score=Decimal("0.8900"),
             systolic=150,
             diastolic=95,
-            glucose=None,
-            raw_payload={"ocr_model": "vision_v2"},
+            glucose=Decimal("142.00"),
         )
 
         url = f"/api/v1/adjudications/queue/{current_refill.id}"
@@ -227,12 +202,12 @@ class TestAdjudicationClaimDetailAPI:
         assert data["status"] == RefillStatus.NEEDS_REVIEW
         assert data["patient"]["national_id"] == "29001010101234"
         assert data["patient"]["baseline_systolic"] == 120
-        assert data["prescription"]["medication_name"] == "Amlodipine"
+        assert data["prescription"]["medication_name"] == "CurrentMed"
         assert data["triage"]["triage_color"] == TriageColor.YELLOW
         assert data["triage"]["anomaly_reason"] == AnomalyReason.CLINICAL_VARIANCE_EXCEEDED
-        assert data["current_scan"]["image_storage_uri"] == "s3://vault/scans/current_bp.jpg"
-        assert data["current_ocr"]["systolic"] == 150
-        assert data["prior_cycle_ocr"]["systolic"] == 118
+        assert data["current_telemetry"]["systolic"] == 150
+        assert data["current_telemetry"]["diastolic"] == 95
+        assert data["prior_cycle_telemetry"]["systolic"] == 118
         assert data["adjudication"] is None
 
     def test_claim_detail_nonexistent_returns_404(
@@ -295,7 +270,7 @@ class TestAdjudicateRefillAPI:
         payload = {
             "decision": "REJECT",
             "rejection_reason_category": RejectionReasonCategory.SUSPECTED_FRAUD_TAMPERING,
-            "clinical_notes": "Identical pixel signature to prior month image. Suspected fraudulent duplication.",
+            "clinical_notes": "Identical vital signature as prior submission. Suspected fraudulent duplication.",
         }
         response = auth_client.post(url, payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED
