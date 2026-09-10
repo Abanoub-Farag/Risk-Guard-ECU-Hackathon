@@ -12,9 +12,7 @@ class RefillStatus(models.TextChoices):
     REJECTED = "REJECTED", "Rejected"
 
 
-class DeviceType(models.TextChoices):
-    BLOOD_PRESSURE = "BLOOD_PRESSURE", "Blood Pressure Monitor"
-    GLUCOMETER = "GLUCOMETER", "Glucometer"
+
 
 
 class RefillRequest(BaseModel):
@@ -79,43 +77,4 @@ class RefillRequest(BaseModel):
         return f"Refill {self.id} for Patient {self.patient_id} [{self.status}]"
 
 
-class DeviceScan(BaseModel):
-    """
-    Ingests and records biometric device screen captures (BP monitors, glucometers)
-    associated with a refill intake request.
-    """
-    refill_request = models.ForeignKey(
-        RefillRequest,
-        on_delete=models.CASCADE,
-        related_name="scans",
-        db_index=True,
-    )
-    device_type = models.CharField(
-        max_length=20,
-        choices=DeviceType.choices,
-    )
-    image_storage_uri = models.TextField(
-        help_text="Compliant sovereign object storage URI path",
-    )
-    captured_at = models.DateTimeField(
-        auto_now_add=True,
-    )
 
-    class Meta(BaseModel.Meta):
-        db_table = "device_scans"
-        constraints = [
-            models.CheckConstraint(
-                condition=Q(device_type__in=DeviceType.values),
-                name="chk_device_type_valid",
-            ),
-            models.UniqueConstraint(
-                fields=["refill_request", "device_type"],
-                name="uq_device_scan_refill_type",
-            ),
-        ]
-        indexes = [
-            models.Index(fields=["refill_request", "device_type"], name="idx_scan_req_device"),
-        ]
-
-    def __str__(self) -> str:
-        return f"Scan {self.id} ({self.device_type}) for Refill {self.refill_request_id}"

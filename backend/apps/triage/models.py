@@ -15,26 +15,19 @@ class TriageColor(models.TextChoices):
 class AnomalyReason(models.TextChoices):
     PHYSIOLOGICAL_IMPOSSIBILITY = "PHYSIOLOGICAL_IMPOSSIBILITY", "Physiological Impossibility"
     SUSPECTED_DATA_FABRICATION = "SUSPECTED_DATA_FABRICATION", "Suspected Data Fabrication"
-    LOW_OCR_CONFIDENCE = "LOW_OCR_CONFIDENCE", "Low OCR Confidence"
     CLINICAL_VARIANCE_EXCEEDED = "CLINICAL_VARIANCE_EXCEEDED", "Clinical Variance Exceeded"
     SEVERE_SYMPTOMS_REPORTED = "SEVERE_SYMPTOMS_REPORTED", "Severe Symptoms Reported"
 
 
-class OCRResult(BaseModel):
+class IntakeTelemetry(BaseModel):
     """
-    Persists telemetry extracted via OCR from device screen captures,
-    recording confidence scores and raw model payloads.
+    Persists manual telemetry submitted for a refill intake request.
     """
     refill_request = models.ForeignKey(
         RefillRequest,
         on_delete=models.CASCADE,
-        related_name="ocr_results",
+        related_name="telemetry_records",
         db_index=True,
-    )
-    confidence_score = models.DecimalField(
-        max_digits=5,
-        decimal_places=4,
-        help_text="OCR model extraction confidence score [0.0000, 1.0000]",
     )
     systolic = models.IntegerField(
         null=True,
@@ -53,34 +46,22 @@ class OCRResult(BaseModel):
         blank=True,
         help_text="Extracted blood glucose in mg/dL",
     )
-    raw_payload = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text="Raw OCR model outputs and coordinate metadata",
-    )
     processed_at = models.DateTimeField(
         default=timezone.now,
         db_index=True,
     )
 
     class Meta(BaseModel.Meta):
-        db_table = "ocr_results"
-        constraints = [
-            models.CheckConstraint(
-                condition=Q(confidence_score__gte=Decimal("0.0000"))
-                & Q(confidence_score__lte=Decimal("1.0000")),
-                name="chk_ocr_confidence_score_range",
-            ),
-        ]
+        db_table = "intake_telemetry"
         indexes = [
             models.Index(
                 fields=["refill_request", "-processed_at"],
-                name="idx_ocr_refill_processed",
+                name="idx_telemetry_refill_processed",
             ),
         ]
 
     def __str__(self) -> str:
-        return f"OCRResult {self.id} for Refill {self.refill_request_id} (conf={self.confidence_score})"
+        return f"IntakeTelemetry {self.id} for Refill {self.refill_request_id}"
 
 
 class TriageRecord(BaseModel):

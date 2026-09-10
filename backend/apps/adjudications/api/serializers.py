@@ -7,8 +7,8 @@ from apps.adjudications.models import (
 )
 from apps.refills.models import RefillRequest
 from apps.triage.selectors import (
-    ocr_result_get_latest_for_refill,
-    ocr_result_get_previous_for_patient,
+    intake_telemetry_get_latest_for_refill,
+    intake_telemetry_get_previous_for_patient,
 )
 
 
@@ -126,8 +126,8 @@ class AdjudicationClaimDetailOutputSerializer(serializers.Serializer):
     prescription = serializers.SerializerMethodField()
     triage = serializers.SerializerMethodField()
     current_scan = serializers.SerializerMethodField()
-    current_ocr = serializers.SerializerMethodField()
-    prior_cycle_ocr = serializers.SerializerMethodField()
+    current_telemetry = serializers.SerializerMethodField()
+    prior_cycle_telemetry = serializers.SerializerMethodField()
     adjudication = serializers.SerializerMethodField()
 
     def get_patient(self, obj: RefillRequest) -> dict[str, Any]:
@@ -172,22 +172,20 @@ class AdjudicationClaimDetailOutputSerializer(serializers.Serializer):
             "captured_at": scan.captured_at,
         }
 
-    def get_current_ocr(self, obj: RefillRequest) -> dict[str, Any] | None:
-        ocr = ocr_result_get_latest_for_refill(obj.id)
-        if not ocr:
+    def get_current_telemetry(self, obj: RefillRequest) -> dict[str, Any] | None:
+        telemetry = intake_telemetry_get_latest_for_refill(obj.id)
+        if not telemetry:
             return None
         return {
-            "id": ocr.id,
-            "confidence_score": ocr.confidence_score,
-            "systolic": ocr.systolic,
-            "diastolic": ocr.diastolic,
-            "glucose": ocr.glucose,
-            "raw_payload": ocr.raw_payload,
-            "processed_at": ocr.processed_at,
+            "id": telemetry.id,
+            "systolic": telemetry.systolic,
+            "diastolic": telemetry.diastolic,
+            "glucose": telemetry.glucose,
+            "processed_at": telemetry.processed_at,
         }
 
-    def get_prior_cycle_ocr(self, obj: RefillRequest) -> dict[str, Any] | None:
-        prior = ocr_result_get_previous_for_patient(
+    def get_prior_cycle_telemetry(self, obj: RefillRequest) -> dict[str, Any] | None:
+        prior = intake_telemetry_get_previous_for_patient(
             patient_id=obj.patient_id,
             exclude_refill_id=obj.id,
         )
@@ -195,7 +193,6 @@ class AdjudicationClaimDetailOutputSerializer(serializers.Serializer):
             return None
         return {
             "id": prior.id,
-            "confidence_score": prior.confidence_score,
             "systolic": prior.systolic,
             "diastolic": prior.diastolic,
             "glucose": prior.glucose,

@@ -9,18 +9,17 @@ from rest_framework.views import APIView
 from apps.common.exceptions import ApplicationError
 from apps.refills.selectors import refill_request_get_by_id
 from apps.triage.api.serializers import (
-    ProcessOCRInputSerializer,
+    ProcessIntakeInputSerializer,
     TriageRecordOutputSerializer,
 )
 from apps.triage.selectors import triage_record_get_by_refill_id
 from apps.triage.services import TriageEvaluationService
 
 
-class ProcessOCRAPIView(APIView):
+class ProcessIntakeAPIView(APIView):
     """
-    POST /api/v1/refill-requests/{refill_id}/process-ocr
-    Triggers biometric telemetry extraction from device screen capture scans
-    and executes the automated clinical triage rule engine.
+    POST /api/v1/refill-requests/{refill_id}/process-intake
+    Triggers biometric telemetry validation and executes the automated clinical triage rule engine.
     """
     permission_classes = [IsAuthenticated]
     throttle_classes = [ScopedRateThrottle]
@@ -28,9 +27,9 @@ class ProcessOCRAPIView(APIView):
 
     @extend_schema(
         tags=["Triage"],
-        summary="Process device scan OCR & evaluate triage",
-        description="Extracts biometric metrics from an uploaded device screen capture and determines triage routing.",
-        request=ProcessOCRInputSerializer,
+        summary="Process manual intake telemetry & evaluate triage",
+        description="Validates manual biometric metrics and determines triage routing.",
+        request=ProcessIntakeInputSerializer,
         responses={
             201: TriageRecordOutputSerializer,
             400: None,
@@ -47,25 +46,20 @@ class ProcessOCRAPIView(APIView):
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
-        serializer = ProcessOCRInputSerializer(data=request.data)
+        serializer = ProcessIntakeInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated = serializer.validated_data
 
-        scan_id = validated.get("scan_id")
-        override_telemetry = {}
-        for key in ["systolic", "diastolic", "glucose", "confidence_score", "raw_payload"]:
-            if key in validated and validated[key] is not None:
-                override_telemetry[key] = validated[key]
-
-        triage_record, ocr_result = TriageEvaluationService.process_ocr_and_evaluate(
+        triage_record, telemetry = TriageEvaluationService.process_intake_and_evaluate(
             refill_request=refill_request,
-            scan_id=scan_id,
-            override_telemetry=override_telemetry if override_telemetry else None,
+            systolic=validated.get("systolic"),
+            diastolic=validated.get("diastolic"),
+            glucose=validated.get("glucose"),
         )
 
         output_serializer = TriageRecordOutputSerializer(
             triage_record,
-            context={"ocr_result": ocr_result},
+            context={"telemetry": telemetry},
         )
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 

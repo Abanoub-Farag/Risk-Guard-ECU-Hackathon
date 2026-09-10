@@ -1,7 +1,7 @@
 from uuid import UUID
 from rest_framework import status
 from apps.common.exceptions import ApplicationError
-from apps.triage.models import OCRResult, TriageRecord
+from apps.triage.models import IntakeTelemetry, TriageRecord
 
 
 def triage_record_get_by_refill_id(refill_id: UUID) -> TriageRecord:
@@ -21,27 +21,27 @@ def triage_record_get_by_refill_id(refill_id: UUID) -> TriageRecord:
         )
 
 
-def ocr_result_get_latest_for_refill(refill_id: UUID) -> OCRResult | None:
+def intake_telemetry_get_latest_for_refill(refill_id: UUID) -> IntakeTelemetry | None:
     """
-    Fetches the most recently processed OCR extraction record for a refill request.
+    Fetches the most recently submitted telemetry record for a refill request.
     """
     return (
-        OCRResult.objects.filter(refill_request_id=refill_id)
+        IntakeTelemetry.objects.filter(refill_request_id=refill_id)
         .order_by("-processed_at")
         .first()
     )
 
 
-def ocr_result_get_previous_for_patient(
+def intake_telemetry_get_previous_for_patient(
     patient_id: UUID,
     exclude_refill_id: UUID,
-) -> OCRResult | None:
+) -> IntakeTelemetry | None:
     """
-    Fetches the immediately preceding OCR extraction record for the same patient
+    Fetches the immediately preceding telemetry record for the same patient
     across previous refill requests, ordered by processed_at DESC.
     """
     return (
-        OCRResult.objects.filter(refill_request__patient_id=patient_id)
+        IntakeTelemetry.objects.filter(refill_request__patient_id=patient_id)
         .exclude(refill_request_id=exclude_refill_id)
         .order_by("-processed_at")
         .first()

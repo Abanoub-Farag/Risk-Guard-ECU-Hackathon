@@ -6,7 +6,7 @@ from django.db import IntegrityError
 from rest_framework import status
 from rest_framework.test import APIClient
 from apps.patients.models import Patient, PatientPrescription
-from apps.refills.models import DeviceScan, DeviceType, RefillRequest, RefillStatus
+from apps.refills.models import RefillRequest, RefillStatus
 from apps.triage.models import AnomalyReason, TriageColor, TriageRecord
 
 User = get_user_model()
@@ -53,28 +53,20 @@ def refill_request(patient: Patient, prescription: PatientPrescription) -> Refil
     )
 
 
-class TestProcessOCRAPI:
+class TestProcessIntakeAPI:
     """
-    Integration tests for POST /api/v1/refill-requests/{refill_id}/process-ocr
+    Integration tests for POST /api/v1/refill-requests/{refill_id}/process-intake/
     """
 
-    def test_full_lifecycle_process_ocr_success(
+    def test_full_lifecycle_process_intake_success(
         self,
         auth_client: APIClient,
         refill_request: RefillRequest,
     ) -> None:
-        # Upload / attach scan
-        DeviceScan.objects.create(
-            refill_request=refill_request,
-            device_type=DeviceType.BLOOD_PRESSURE,
-            image_storage_uri="s3://compliant-vault/scans/bp_reading.jpg",
-        )
-
-        url = f"/api/v1/refill-requests/{refill_request.id}/process-ocr"
+        url = f"/api/v1/refill-requests/{refill_request.id}/process-intake/"
         payload = {
             "systolic": 125,
             "diastolic": 82,
-            "confidence_score": "0.9400",
         }
         response = auth_client.post(url, payload, format="json")
 
@@ -84,34 +76,27 @@ class TestProcessOCRAPI:
         assert data["triage_color"] == TriageColor.GREEN
         assert data["anomaly_reason"] is None
         assert data["refill_request_status"] == RefillStatus.APPROVED
-        assert data["ocr_result"] is not None
-        assert data["ocr_result"]["systolic"] == 125
-        assert data["ocr_result"]["diastolic"] == 82
-        assert Decimal(data["ocr_result"]["confidence_score"]) == Decimal("0.9400")
+        assert data["telemetry"] is not None
+        assert data["telemetry"]["systolic"] == 125
+        assert data["telemetry"]["diastolic"] == 82
 
         # Database state verification
         refill_request.refresh_from_db()
         assert refill_request.status == RefillStatus.APPROVED
         assert TriageRecord.objects.filter(refill_request=refill_request).count() == 1
 
-    def test_process_ocr_idempotency_and_1_to_1_constraint(
+    def test_process_intake_idempotency_and_1_to_1_constraint(
         self,
         auth_client: APIClient,
         refill_request: RefillRequest,
     ) -> None:
-        DeviceScan.objects.create(
-            refill_request=refill_request,
-            device_type=DeviceType.BLOOD_PRESSURE,
-            image_storage_uri="s3://compliant-vault/scans/bp_reading.jpg",
-        )
-
-        url = f"/api/v1/refill-requests/{refill_request.id}/process-ocr"
+        url = f"/api/v1/refill-requests/{refill_request.id}/process-intake/"
         # First call succeeds
-        res1 = auth_client.post(url, {"systolic": 120, "diastolic": 80, "confidence_score": "0.9500"}, format="json")
+        res1 = auth_client.post(url, {"systolic": 120, "diastolic": 80}, format="json")
         assert res1.status_code == status.HTTP_201_CREATED
 
         # Second call yields 409 Conflict (idempotency guard)
-        res2 = auth_client.post(url, {"systolic": 120, "diastolic": 80, "confidence_score": "0.9500"}, format="json")
+        res2 = auth_client.post(url, {"systolic": 120, "diastolic": 80}, format="json")
         assert res2.status_code == status.HTTP_409_CONFLICT
         assert res2.json()["code"] == "triage_record_conflict"
 
@@ -122,23 +107,22 @@ class TestProcessOCRAPI:
                 triage_color=TriageColor.RED,
             )
 
-    def test_process_ocr_without_scans_returns_400(
+    def test_process_intake_missing_fields_returns_400(
         self,
         auth_client: APIClient,
         refill_request: RefillRequest,
     ) -> None:
-        url = f"/api/v1/refill-requests/{refill_request.id}/process-ocr"
-        response = auth_client.post(url, {}, format="json")
+        url = f"/api/v1/refill-requests/{refill_request.id}/process-intake/"
+        response = auth_client.post(url, {"systolic": 120}, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.json()["code"] == "missing_device_scan"
 
-    def test_process_ocr_nonexistent_refill_returns_404(
+    def test_process_intake_nonexistent_refill_returns_404(
         self,
         auth_client: APIClient,
     ) -> None:
         fake_id = uuid.uuid4()
-        url = f"/api/v1/refill-requests/{fake_id}/process-ocr"
-        response = auth_client.post(url, {}, format="json")
+        url = f"/api/v1/refill-requests/{fake_id}/process-intake/"
+        response = auth_client.post(url, {"systolic": 120, "diastolic": 80}, format="json")
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -156,7 +140,7 @@ class TestTriageDetailAPI:
         TriageRecord.objects.create(
             refill_request=refill_request,
             triage_color=TriageColor.YELLOW,
-            anomaly_reason=AnomalyReason.LOW_OCR_CONFIDENCE,
+            anomaly_reason=AnomalyReason.CLINICAL_VARIANCE_EXCEEDED,
         )
 
         url = f"/api/v1/refill-requests/{refill_request.id}/triage"
@@ -166,7 +150,7 @@ class TestTriageDetailAPI:
         data = response.json()
         assert data["refill_request_id"] == str(refill_request.id)
         assert data["triage_color"] == TriageColor.YELLOW
-        assert data["anomaly_reason"] == AnomalyReason.LOW_OCR_CONFIDENCE
+        assert data["anomaly_reason"] == AnomalyReason.CLINICAL_VARIANCE_EXCEEDED
 
     def test_get_triage_detail_not_triaged_returns_404(
         self,

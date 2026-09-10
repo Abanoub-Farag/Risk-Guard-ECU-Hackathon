@@ -7,7 +7,7 @@ from django.utils import timezone
 from rest_framework import status
 from apps.common.exceptions import ApplicationError
 from apps.patients.models import Patient, PatientPrescription
-from apps.refills.models import DeviceScan, DeviceType, RefillRequest, RefillStatus
+from apps.refills.models import RefillRequest, RefillStatus
 from apps.refills.storage import ObjectStorageService
 
 
@@ -97,61 +97,7 @@ def refill_request_create(
     return refill_request
 
 
-@transaction.atomic
-def device_scan_create(
-    *,
-    refill_request: RefillRequest,
-    device_type: str,
-    uploaded_file: UploadedFile,
-    storage_service: ObjectStorageService | None = None,
-) -> DeviceScan:
-    """
-    Validates screen capture payload, persists binary to sovereign storage,
-    and links the resulting DeviceScan to the refill request.
-    """
-    if device_type not in DeviceType.values:
-        raise ApplicationError(
-            message=f"Invalid device type '{device_type}'. Allowed: {DeviceType.values}",
-            code="invalid_device_type",
-            status_code=status.HTTP_400_BAD_REQUEST,
-        )
 
-    storage = storage_service or ObjectStorageService()
-    image_storage_uri = storage.store_file(
-        patient_id=refill_request.patient_id,
-        refill_request_id=refill_request.id,
-        uploaded_file=uploaded_file,
-    )
-
-    scan = DeviceScan.objects.create(
-        refill_request=refill_request,
-        device_type=device_type,
-        image_storage_uri=image_storage_uri,
-    )
-
-    return scan
-
-
-@transaction.atomic
-def refill_request_submit_for_review(
-    *,
-    refill_request: RefillRequest,
-) -> RefillRequest:
-    """
-    Transitions refill request into the verification pipeline.
-    Blocks if no device scans have been ingested for this intake.
-    """
-    scan_count = refill_request.scans.count()
-    if scan_count < 1:
-        raise ApplicationError(
-            message="Cannot submit refill request for review without at least one device screen capture scan.",
-            code="missing_device_scans",
-            status_code=status.HTTP_400_BAD_REQUEST,
-        )
-
-    refill_request.status = RefillStatus.NEEDS_REVIEW
-    refill_request.save(update_fields=["status", "updated_at"])
-    return refill_request
 
 
 @transaction.atomic
