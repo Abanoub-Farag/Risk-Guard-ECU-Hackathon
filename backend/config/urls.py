@@ -12,6 +12,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
     TokenVerifyView,
 )
+from apps.common.api.views import UserRegistrationView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -20,6 +21,7 @@ urlpatterns = [
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
     # Authentication Endpoints
+    path("api/v1/auth/register/", UserRegistrationView.as_view(), name="user_register"),
     path("api/v1/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/v1/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/v1/auth/token/verify/", TokenVerifyView.as_view(), name="token_verify"),

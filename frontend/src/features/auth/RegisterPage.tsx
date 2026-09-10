@@ -3,8 +3,8 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { getErrorMessage } from '../../api/errors'
 
-export default function LoginPage() {
-  const { login } = useAuth()
+export default function RegisterPage() {
+  const { register } = useAuth()
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -17,7 +17,7 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      await login({ username, password })
+      await register({ username, password })
       navigate('/dashboard')
     } catch (err) {
       setError(getErrorMessage(err))
@@ -33,7 +33,7 @@ export default function LoginPage() {
           RiskGuard
         </h1>
         <p className="text-sm text-slate-500 text-center mt-1 mb-8">
-          Sign in to your account
+          Create a new account
         </p>
 
         {error && (
@@ -45,13 +45,13 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
-              htmlFor="email"
+              htmlFor="username"
               className="block text-sm font-medium text-slate-700"
             >
-              Email
+              Username / Email
             </label>
             <input
-              id="email"
+              id="username"
               type="text"
               required
               value={username}
@@ -82,14 +82,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-md bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? 'Creating account...' : 'Sign up'}
           </button>
         </form>
 
         <div className="mt-6 text-center text-sm text-slate-600">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-blue-600 hover:underline">
-            Sign up
+          Already have an account?{' '}
+          <Link to="/login" className="text-blue-600 hover:underline">
+            Sign in
           </Link>
         </div>
       </div>

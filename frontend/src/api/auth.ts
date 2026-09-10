@@ -20,6 +20,10 @@ export const authApi = {
     return response.data
   },
 
+  register: async (credentials: LoginCredentials): Promise<void> => {
+    await apiClient.post('auth/register/', credentials)
+  },
+
   refresh: async (refresh: string): Promise<AuthTokens> => {
     const response = await apiClient.post<LoginResponse>(
       'auth/token/refresh/',

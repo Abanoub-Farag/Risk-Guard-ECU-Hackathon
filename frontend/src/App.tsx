@@ -3,6 +3,7 @@ import { AuthProvider } from './hooks/useAuth'
 import { DataProvider } from './hooks/useData'
 import DashboardLayout from './layouts/DashboardLayout'
 import LoginPage from './features/auth/LoginPage'
+import RegisterPage from './features/auth/RegisterPage'
 import DashboardPage from './features/dashboard/DashboardPage'
 import {
   PatientsDirectoryPage,
@@ -20,6 +21,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             <Route element={<DashboardLayout />}>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<DashboardPage />} />
