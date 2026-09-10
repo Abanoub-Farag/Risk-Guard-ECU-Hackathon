@@ -1,4 +1,4 @@
-import { PharmacyVoucher, RedeemVoucherDTO, VoucherVerificationResponse } from '../types/voucher.types';
+import { type PharmacyVoucher, type RedeemVoucherDTO, type VoucherVerificationResponse } from '../types/voucher.types';
 
 const API_BASE_URL = '/api/v1';
 

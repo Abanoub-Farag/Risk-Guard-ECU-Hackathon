@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { QueueItem } from '../types/adjudication.types';
+import { type QueueItem } from '../types/adjudication.types';
 
 interface QueueRowProps {
   item: QueueItem;

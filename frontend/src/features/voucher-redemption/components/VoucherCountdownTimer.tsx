@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { calculateTimeRemaining, formatTimeRemaining, TimeRemaining } from '../utils/voucher-timer.helper';
+import { calculateTimeRemaining, formatTimeRemaining, type TimeRemaining } from '../utils/voucher-timer.helper';
 
 interface VoucherCountdownTimerProps {
   expiresAt: string;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { VoucherStatus } from '../types/voucher.types';
+import { type VoucherStatus } from '../types/voucher.types';
 
 interface VoucherStatusBadgeProps {
   status: VoucherStatus;

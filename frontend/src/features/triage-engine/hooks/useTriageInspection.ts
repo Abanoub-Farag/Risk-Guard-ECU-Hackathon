@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchTriageRecord } from '../services/triage.api';
-import { TriageSummaryResponse } from '../types/triage.types';
+import { type TriageSummaryResponse } from '../types/triage.types';
 
 export function useTriageInspection(refillRequestId: string) {
   const [isLoading, setIsLoading] = useState(true);

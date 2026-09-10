@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PharmacyVoucher } from '../types/voucher.types';
+import { type PharmacyVoucher } from '../types/voucher.types';
 import { fetchVoucherDetails } from '../services/voucher.api';
 
 export function useVoucherDetails(voucherId: string) {

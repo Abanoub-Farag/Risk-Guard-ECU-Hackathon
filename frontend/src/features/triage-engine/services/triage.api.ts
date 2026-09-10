@@ -1,4 +1,4 @@
-import { ProcessOcrDTO, TriageSummaryResponse } from '../types/triage.types';
+import { type ProcessOcrDTO, type TriageSummaryResponse } from '../types/triage.types';
 
 const API_BASE_URL = '/api/v1';
 

@@ -1,4 +1,4 @@
-import { QueueItem } from '../types/adjudication.types';
+import { type QueueItem } from '../types/adjudication.types';
 
 export function sortAdjudicationQueue(items: QueueItem[]): QueueItem[] {
   return [...items].sort((a, b) => {

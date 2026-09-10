@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AdjudicationDecision, RejectionReasonCategory, SubmitAdjudicationDTO } from '../types/adjudication.types';
+import { type AdjudicationDecision, type RejectionReasonCategory, type SubmitAdjudicationDTO } from '../types/adjudication.types';
 import { validateAdjudicationAction } from '../utils/adjudication.validator';
 
 interface AdjudicationActionModalProps {

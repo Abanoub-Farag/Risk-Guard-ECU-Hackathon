@@ -1,5 +1,5 @@
 import React from 'react';
-import { TriageColor, AnomalyReason } from '../types/triage.types';
+import { type TriageColor, AnomalyReason } from '../types/triage.types';
 import { formatAnomalyReason } from '../utils/triage-formatter';
 
 interface TriageColorBannerProps {

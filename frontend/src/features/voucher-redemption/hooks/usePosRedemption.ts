@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { verifyVoucher, redeemVoucher } from '../services/voucher.api';
-import { PharmacyVoucher, RedeemVoucherDTO } from '../types/voucher.types';
+import { type PharmacyVoucher, type RedeemVoucherDTO } from '../types/voucher.types';
 
 export function usePosRedemption(pharmacyId: string) {
   const [isLoading, setIsLoading] = useState(false);

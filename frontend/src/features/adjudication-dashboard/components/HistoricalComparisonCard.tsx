@@ -1,5 +1,5 @@
 import React from 'react';
-import { ClaimDetailResponse } from '../types/adjudication.types';
+import { type ClaimDetailResponse } from '../types/adjudication.types';
 
 interface HistoricalComparisonCardProps {
   currentMetrics: ClaimDetailResponse['extracted_metrics'];

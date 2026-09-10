@@ -1,5 +1,5 @@
 import React from 'react';
-import { PharmacyVoucher } from '../types/voucher.types';
+import { type PharmacyVoucher } from '../types/voucher.types';
 import { maskNationalId } from '../utils/voucher-masking.helper';
 import '../styles/voucher-redemption.css';
 

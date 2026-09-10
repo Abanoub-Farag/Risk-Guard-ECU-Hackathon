@@ -1,5 +1,5 @@
 import React from 'react';
-import { QueueItem } from '../types/adjudication.types';
+import { type QueueItem } from '../types/adjudication.types';
 import { QueueRow } from './QueueRow';
 
 interface AdjudicationQueueTableProps {

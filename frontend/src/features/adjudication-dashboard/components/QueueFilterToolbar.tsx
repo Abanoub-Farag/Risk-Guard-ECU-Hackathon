@@ -1,5 +1,5 @@
 import React from 'react';
-import { FilterState } from '../hooks/useAdjudicationQueue';
+import { type FilterState } from '../hooks/useAdjudicationQueue';
 
 interface QueueFilterToolbarProps {
   currentFilter: FilterState;

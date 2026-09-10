@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { QueueItem, TriageColor } from '../types/adjudication.types';
+import { type QueueItem, type TriageColor } from '../types/adjudication.types';
 import { fetchQueueItems } from '../services/adjudication.api';
 import { sortAdjudicationQueue } from '../utils/queue-sorter';
 

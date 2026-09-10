@@ -1,4 +1,4 @@
-import { AdjudicationDecision, RejectionReasonCategory } from '../types/adjudication.types';
+import { type AdjudicationDecision, type RejectionReasonCategory } from '../types/adjudication.types';
 
 export interface AdjudicationValidationResult {
   isValid: boolean;

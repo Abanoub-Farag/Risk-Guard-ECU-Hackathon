@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { sortAdjudicationQueue } from '../utils/queue-sorter';
-import { QueueItem } from '../types/adjudication.types';
+import { type QueueItem } from '../types/adjudication.types';
 
 describe('queue-sorter', () => {
   it('sorts RED before YELLOW and by FIFO', () => {

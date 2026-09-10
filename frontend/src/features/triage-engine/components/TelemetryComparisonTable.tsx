@@ -1,5 +1,5 @@
 import React from 'react';
-import { OcrResult } from '../types/triage.types';
+import { type OcrResult } from '../types/triage.types';
 
 interface TelemetryComparisonTableProps {
   currentMetrics: OcrResult;

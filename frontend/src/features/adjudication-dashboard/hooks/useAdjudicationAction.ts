@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SubmitAdjudicationDTO } from '../types/adjudication.types';
+import { type SubmitAdjudicationDTO } from '../types/adjudication.types';
 import { submitAdjudication } from '../services/adjudication.api';
 
 export function useAdjudicationAction(claimId: string) {

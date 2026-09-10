@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ClaimDetailResponse } from '../types/adjudication.types';
+import { type ClaimDetailResponse } from '../types/adjudication.types';
 import { fetchClaimDetail } from '../services/adjudication.api';
 
 export function useClaimInspection(claimId: string) {

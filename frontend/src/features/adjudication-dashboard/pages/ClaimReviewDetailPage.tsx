@@ -6,7 +6,7 @@ import { DeviceScanImageViewer } from '../components/DeviceScanImageViewer';
 import { ClaimTelemetryPanel } from '../components/ClaimTelemetryPanel';
 import { HistoricalComparisonCard } from '../components/HistoricalComparisonCard';
 import { AdjudicationActionModal } from '../components/AdjudicationActionModal';
-import { AdjudicationDecision, SubmitAdjudicationDTO } from '../types/adjudication.types';
+import { type AdjudicationDecision, type SubmitAdjudicationDTO } from '../types/adjudication.types';
 import '../styles/adjudication.css';
 
 export const ClaimReviewDetailPage: React.FC = () => {

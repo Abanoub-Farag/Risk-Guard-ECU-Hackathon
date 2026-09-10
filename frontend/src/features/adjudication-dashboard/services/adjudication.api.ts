@@ -1,4 +1,4 @@
-import { QueueItem, ClaimDetailResponse, SubmitAdjudicationDTO } from '../types/adjudication.types';
+import { type QueueItem, type ClaimDetailResponse, type SubmitAdjudicationDTO } from '../types/adjudication.types';
 
 const API_BASE_URL = '/api/v1';
 

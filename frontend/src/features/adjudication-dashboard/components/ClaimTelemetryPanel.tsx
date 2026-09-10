@@ -1,5 +1,5 @@
 import React from 'react';
-import { ClaimDetailResponse } from '../types/adjudication.types';
+import { type ClaimDetailResponse } from '../types/adjudication.types';
 
 interface ClaimTelemetryPanelProps {
   metrics: ClaimDetailResponse['extracted_metrics'];

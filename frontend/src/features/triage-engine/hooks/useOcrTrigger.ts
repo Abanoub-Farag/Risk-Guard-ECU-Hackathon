@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { processOcrRequest } from '../services/triage.api';
-import { ProcessOcrDTO, TriageSummaryResponse } from '../types/triage.types';
+import { type ProcessOcrDTO, type TriageSummaryResponse } from '../types/triage.types';
 
 export function useOcrTrigger(refillRequestId: string) {
   const [isProcessing, setIsProcessing] = useState(false);
