@@ -6,6 +6,12 @@ export interface LoginCredentials {
   password: string
 }
 
+export interface RegisterCredentials extends LoginCredentials {
+  email?: string
+  first_name?: string
+  last_name?: string
+}
+
 export interface LoginResponse {
   access: string
   refresh: string
@@ -20,7 +26,7 @@ export const authApi = {
     return response.data
   },
 
-  register: async (credentials: LoginCredentials): Promise<void> => {
+  register: async (credentials: RegisterCredentials): Promise<void> => {
     await apiClient.post('auth/register/', credentials)
   },
 

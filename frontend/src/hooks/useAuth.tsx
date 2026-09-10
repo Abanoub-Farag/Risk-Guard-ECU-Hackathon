@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react'
 import { clearTokens, getAccessToken, setTokens } from '../api/client'
-import { authApi, type LoginCredentials } from '../api/auth'
+import { authApi, type LoginCredentials, type RegisterCredentials } from '../api/auth'
 
 interface User {
   username: string | null
@@ -16,7 +16,7 @@ interface AuthContextValue {
   user: User | null
   isAuthenticated: boolean
   login: (credentials: LoginCredentials) => Promise<void>
-  register: (credentials: LoginCredentials) => Promise<void>
+  register: (credentials: RegisterCredentials) => Promise<void>
   logout: () => void
 }
 
@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser({ username: credentials.username })
   }, [])
 
-  const register = useCallback(async (credentials: LoginCredentials) => {
+  const register = useCallback(async (credentials: RegisterCredentials) => {
     await authApi.register(credentials)
     const tokens = await authApi.login(credentials)
     setTokens(tokens)

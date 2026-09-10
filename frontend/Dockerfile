@@ -13,7 +13,7 @@ RUN npm ci
 
 # Pass Vite environment variables as build arguments
 ARG VITE_API_URL="http://localhost:8000/api/v1/"
-ARG VITE_USE_MOCK="false"
+ARG VITE_USE_MOCK="true"
 
 ENV VITE_API_URL=$VITE_API_URL \
     VITE_USE_MOCK=$VITE_USE_MOCK

@@ -8,6 +8,9 @@ export default function RegisterPage() {
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -17,7 +20,13 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      await register({ username, password })
+      await register({ 
+        username, 
+        password, 
+        email, 
+        first_name: firstName, 
+        last_name: lastName 
+      })
       navigate('/dashboard')
     } catch (err) {
       setError(getErrorMessage(err))
@@ -48,7 +57,7 @@ export default function RegisterPage() {
               htmlFor="username"
               className="block text-sm font-medium text-slate-700"
             >
-              Username / Email
+              Username
             </label>
             <input
               id="username"
@@ -58,6 +67,55 @@ export default function RegisterPage() {
               onChange={(e) => setUsername(e.target.value)}
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-slate-700"
+            >
+              Email (Optional)
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="firstName"
+                className="block text-sm font-medium text-slate-700"
+              >
+                First Name (Optional)
+              </label>
+              <input
+                id="firstName"
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="lastName"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Last Name (Optional)
+              </label>
+              <input
+                id="lastName"
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
 
           <div>

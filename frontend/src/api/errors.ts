@@ -15,10 +15,6 @@ export const getErrorMessage = (error: unknown): string => {
     }
     const data = axiosError.response?.data as ApiError | ApiErrorResponse | undefined
 
-    if (data?.detail) {
-      return data.detail
-    }
-
     if (data?.errors && typeof data.errors === 'object') {
       const firstErrKey = Object.keys(data.errors)[0]
       if (firstErrKey) {
@@ -26,6 +22,10 @@ export const getErrorMessage = (error: unknown): string => {
         if (Array.isArray(val) && val.length > 0) return `${firstErrKey}: ${val[0]}`
         if (typeof val === 'string') return `${firstErrKey}: ${val}`
       }
+    }
+
+    if (data?.detail) {
+      return data.detail
     }
 
     if (data && typeof data === 'object') {
