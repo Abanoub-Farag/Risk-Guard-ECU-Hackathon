@@ -41,6 +41,7 @@ class Command(BaseCommand):
         admin = self._get_or_create_user("admin", "RiskGuard@123", is_staff=True, is_superuser=True)
         doctor = self._get_or_create_user("doctor", "RiskGuard@123", is_staff=True)
         self._get_or_create_user("pharmacy", "RiskGuard@123")
+        self._get_or_create_user("demo", "demo12345678", is_staff=True)
 
         patients = self._seed_patients()
         vouchers: list[PharmacyVoucher] = []
@@ -150,8 +151,10 @@ class Command(BaseCommand):
             vouchers.append(green_voucher)
 
         self.stdout.write(self.style.SUCCESS("\n=== Seed complete ==="))
-        self.stdout.write(f"Admin user: admin / RiskGuard@123")
-        self.stdout.write(f"Reviewer user: doctor / RiskGuard@123")
+        self.stdout.write("Admin user: admin / RiskGuard@123")
+        self.stdout.write("Reviewer user: doctor / RiskGuard@123")
+        self.stdout.write("Pharmacy user: pharmacy / RiskGuard@123")
+        self.stdout.write("Simple access: demo / demo12345678")
         self.stdout.write("\nPatients:")
         for p in patients:
             self.stdout.write(f"  - {p.full_name} ({p.national_id})")
