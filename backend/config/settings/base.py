@@ -191,6 +191,10 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]+",
+    "ENUM_NAME_OVERRIDES": {
+        "RefillStatusEnum": "apps.refills.models.RefillStatus",
+        "VoucherStatusEnum": "apps.vouchers.models.VoucherStatus",
+    },
 }
 
 # Request Tracing / Correlation IDs
