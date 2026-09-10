@@ -9,16 +9,12 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from apps.refills.api.serializers import (
-    DeviceScanCreateInputSerializer,
-    DeviceScanOutputSerializer,
     RefillRequestCreateInputSerializer,
     RefillRequestOutputSerializer,
 )
 from apps.refills.selectors import refill_request_get_by_id
 from apps.refills.services import (
-    device_scan_create,
     refill_request_create,
-    refill_request_submit_for_review,
 )
 
 
@@ -66,52 +62,7 @@ class RefillRequestDetailAPIView(APIView):
         return Response(RefillRequestOutputSerializer(refill_request).data, status=status.HTTP_200_OK)
 
 
-class DeviceScanUploadAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "refills"
-    parser_classes = [MultiPartParser, FormParser]
-
-    @extend_schema(
-        tags=["Refills"],
-        summary="Upload device screen capture image",
-        description="Accepts multipart image upload, validates magic bytes, and routes to sovereign storage.",
-        request=DeviceScanCreateInputSerializer,
-        responses={201: DeviceScanOutputSerializer},
-    )
-    def post(self, request: Request, refill_id: uuid.UUID) -> Response:
-        refill_request = refill_request_get_by_id(refill_id=refill_id)
-        if not refill_request:
-            raise NotFound("Refill request not found.")
-
-        serializer = DeviceScanCreateInputSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        data = serializer.validated_data
-        scan = device_scan_create(
-            refill_request=refill_request,
-            device_type=data["device_type"],
-            uploaded_file=data["file"],
-        )
-        return Response(DeviceScanOutputSerializer(scan).data, status=status.HTTP_201_CREATED)
 
 
-class RefillRequestSubmitForReviewAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "refills"
 
-    @extend_schema(
-        tags=["Refills"],
-        summary="Submit refill request for verification",
-        description="Locks refill into verification queue. Strictly requires at least one attached device scan.",
-        request=None,
-        responses={200: RefillRequestOutputSerializer},
-    )
-    def post(self, request: Request, refill_id: uuid.UUID) -> Response:
-        refill_request = refill_request_get_by_id(refill_id=refill_id)
-        if not refill_request:
-            raise NotFound("Refill request not found.")
 
-        updated_request = refill_request_submit_for_review(refill_request=refill_request)
-        return Response(RefillRequestOutputSerializer(updated_request).data, status=status.HTTP_200_OK)

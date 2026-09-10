@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from apps.refills.models import DeviceScan, DeviceType, RefillRequest
+from apps.refills.models import RefillRequest
 
 
 class RefillRequestCreateInputSerializer(serializers.Serializer):
@@ -22,36 +22,12 @@ class RefillRequestCreateInputSerializer(serializers.Serializer):
     )
 
 
-class DeviceScanCreateInputSerializer(serializers.Serializer):
-    device_type = serializers.ChoiceField(
-        choices=DeviceType.choices,
-        help_text="Type of biometric device screen captured ('BLOOD_PRESSURE' or 'GLUCOMETER')",
-    )
-    file = serializers.FileField(
-        help_text="Device screen capture image file (JPEG or PNG, up to 10MB)",
-    )
 
-
-class DeviceScanOutputSerializer(serializers.ModelSerializer):
-    refill_request_id = serializers.UUIDField(source="refill_request.id", read_only=True)
-
-    class Meta:
-        model = DeviceScan
-        fields = [
-            "id",
-            "refill_request_id",
-            "device_type",
-            "image_storage_uri",
-            "captured_at",
-            "created_at",
-        ]
-        read_only_fields = fields
 
 
 class RefillRequestOutputSerializer(serializers.ModelSerializer):
     patient_id = serializers.UUIDField(source="patient.id", read_only=True)
     prescription_id = serializers.UUIDField(source="prescription.id", read_only=True)
-    scans = DeviceScanOutputSerializer(many=True, read_only=True)
 
     class Meta:
         model = RefillRequest
@@ -65,6 +41,5 @@ class RefillRequestOutputSerializer(serializers.ModelSerializer):
             "submitted_at",
             "created_at",
             "updated_at",
-            "scans",
         ]
         read_only_fields = fields
